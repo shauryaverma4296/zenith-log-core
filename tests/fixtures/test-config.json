@@ -1,0 +1,38 @@
+{
+  "default": {
+    "name": "test-logger",
+    "level": "debug",
+    "transports": [
+      {
+        "type": "console",
+        "level": "info"
+      }
+    ],
+    "format": {
+      "type": "json"
+    },
+    "silent": false,
+    "defaultMetadata": {
+      "service": "test-service",
+      "version": "1.0.0"
+    }
+  },
+  "http-logger": {
+    "name": "http-logger",
+    "level": "info",
+    "transports": [
+      {
+        "type": "console"
+      },
+      {
+        "type": "file",
+        "options": {
+          "filename": "http.log"
+        }
+      }
+    ],
+    "format": {
+      "type": "structured"
+    }
+  }
+}

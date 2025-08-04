@@ -1,4 +1,6 @@
 import winston from 'winston';
+import 'winston-mongodb';
+import 'winston-mysql';
 import { ILogger } from '../../domain/interfaces/ILogger';
 import { LogLevel, LOG_LEVELS } from '../../domain/enums/LogLevel';
 import { LogEntry, LogMetadata, LogContext } from '../../domain/entities/LogEntry';
@@ -36,6 +38,25 @@ export class WinstonLoggerAdapter implements ILogger {
         case 'http':
           transports.push(new winston.transports.Http({
             level: transportConfig.level || config.level,
+            ...transportConfig.options
+          }));
+          break;
+        case 'mongodb':
+          transports.push(new (winston.transports as any).MongoDB({
+            level: transportConfig.level || config.level,
+            db: transportConfig.options?.connectionString || 'mongodb://localhost:27017/logs',
+            collection: transportConfig.options?.collection || 'logs',
+            ...transportConfig.options
+          }));
+          break;
+        case 'mysql':
+          transports.push(new (winston.transports as any).MySQL({
+            level: transportConfig.level || config.level,
+            host: transportConfig.options?.host || 'localhost',
+            user: transportConfig.options?.user || 'root',
+            password: transportConfig.options?.password || '',
+            database: transportConfig.options?.database || 'logs',
+            table: transportConfig.options?.table || 'logs',
             ...transportConfig.options
           }));
           break;
@@ -136,14 +157,9 @@ export class WinstonLoggerAdapter implements ILogger {
   }
 
   async close(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.winstonLogger.close((error) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve();
-        }
-      });
+    return new Promise((resolve) => {
+      this.winstonLogger.close();
+      resolve();
     });
   }
 

@@ -11,6 +11,7 @@ import { LoggerService } from '../application/services/LoggerService';
 import { ConfigurationService } from '../application/services/ConfigurationService';
 import { CreateLoggerUseCase } from '../application/use-cases/CreateLoggerUseCase';
 import { ConfigureLoggerUseCase } from '../application/use-cases/ConfigureLoggerUseCase';
+import { TraceCorrelationUseCase } from '../application/use-cases/TraceCorrelationUseCase';
 
 // Infrastructure implementations
 import { WinstonLoggerFactory } from '../infrastructure/factories/WinstonLoggerFactory';
@@ -60,6 +61,7 @@ export class ContainerConfig {
     // Register use cases
     container.registerSingleton<CreateLoggerUseCase>('CreateLoggerUseCase', CreateLoggerUseCase);
     container.registerSingleton<ConfigureLoggerUseCase>('ConfigureLoggerUseCase', ConfigureLoggerUseCase);
+    container.registerSingleton<TraceCorrelationUseCase>('TraceCorrelationUseCase', TraceCorrelationUseCase);
 
     // Register main logger interface
     container.register<ILogger>('ILogger', { useToken: 'LoggerService' });
@@ -87,6 +89,10 @@ export class ContainerConfig {
 
   static configureLoggerUseCase(): ConfigureLoggerUseCase {
     return container.resolve<ConfigureLoggerUseCase>('ConfigureLoggerUseCase');
+  }
+
+  static traceCorrelationUseCase(): TraceCorrelationUseCase {
+    return container.resolve<TraceCorrelationUseCase>('TraceCorrelationUseCase');
   }
 
   static reset(): void {

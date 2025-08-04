@@ -1,7 +1,7 @@
 import { LogLevel } from '../enums/LogLevel';
 
 export interface TransportConfiguration {
-  type: 'console' | 'file' | 'http' | 'custom';
+  type: 'console' | 'file' | 'http' | 'mongodb' | 'mysql' | 'custom';
   level?: LogLevel;
   format?: string;
   options?: Record<string, any>;

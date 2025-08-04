@@ -31,10 +31,7 @@ export class LoggingMiddleware {
   private readonly logger: ILogger;
   private readonly options: Required<MiddlewareOptions>;
 
-  constructor(
-    logger: ILogger, 
-    options: MiddlewareOptions = {}
-  ) {
+  constructor(logger: ILogger, options: MiddlewareOptions = {}) {
     this.logger = logger;
     this.options = {
       logLevel: options.logLevel || LogLevel.INFO,
@@ -42,9 +39,10 @@ export class LoggingMiddleware {
       logResponseBody: options.logResponseBody || false,
       logHeaders: options.logHeaders || false,
       excludeHeaders: options.excludeHeaders || ['authorization', 'cookie'],
-      generateRequestId: options.generateRequestId || (() => Math.random().toString(36).substr(2, 9)),
+      generateRequestId:
+        options.generateRequestId || (() => Math.random().toString(36).substr(2, 9)),
       skipPaths: options.skipPaths || ['/health', '/metrics'],
-      skipMethods: options.skipMethods || []
+      skipMethods: options.skipMethods || [],
     };
   }
 
@@ -64,7 +62,7 @@ export class LoggingMiddleware {
         url: req.url,
         headers: this.filterHeaders(req.headers),
         query: req.query,
-        params: req.params
+        params: req.params,
       };
 
       if (this.options.logRequestBody && req.body) {
@@ -74,48 +72,38 @@ export class LoggingMiddleware {
       const context = {
         requestId,
         userAgent: req.get('User-Agent'),
-        ip: req.ip || req.connection.remoteAddress
+        ip: req.ip || req.connection.remoteAddress,
       };
 
       // Log incoming request
-      this.logger.log(
-        this.options.logLevel,
-        'Incoming Request',
-        { request: requestInfo },
-        context
-      );
+      this.logger.log(this.options.logLevel, 'Incoming Request', { request: requestInfo }, context);
 
       // Override res.end to log response
       const originalEnd = res.end;
-      res.end = function(chunk: any, encoding: any) {
+      res.end = (chunk: any, encoding: any) => {
         const responseTime = Date.now() - startTime;
-        
+
         const responseInfo: ResponseInfo = {
           statusCode: res.statusCode,
-          headers: res.getHeaders ? res.getHeaders() : {}
+          headers: res.getHeaders ? res.getHeaders() : {},
         };
 
         if (this.options.logResponseBody && chunk) {
-          responseInfo.body = chunk;
+          (responseInfo as any).body = chunk;
         }
 
         const responseMetadata = {
           response: responseInfo,
           responseTime,
-          contentLength: res.get('Content-Length')
+          contentLength: res.get('Content-Length'),
         };
 
         const level = res.statusCode >= 400 ? LogLevel.WARN : this.options.logLevel;
-        
-        this.logger.log(
-          level,
-          'Outgoing Response',
-          responseMetadata,
-          context
-        );
+
+        this.logger.log(level, 'Outgoing Response', responseMetadata, context);
 
         originalEnd.call(res, chunk, encoding);
-      }.bind(this);
+      };
 
       next();
     };
@@ -136,7 +124,7 @@ export class LoggingMiddleware {
         url: request.url,
         headers: this.filterHeaders(request.headers),
         query: request.query,
-        params: request.params
+        params: request.params,
       };
 
       if (this.options.logRequestBody && request.body) {
@@ -146,22 +134,17 @@ export class LoggingMiddleware {
       const context = {
         requestId,
         userAgent: request.headers['user-agent'],
-        ip: request.ip
+        ip: request.ip,
       };
 
-      this.logger.log(
-        this.options.logLevel,
-        'Incoming Request',
-        { request: requestInfo },
-        context
-      );
+      this.logger.log(this.options.logLevel, 'Incoming Request', { request: requestInfo }, context);
 
       reply.addHook('onSend', async (request: any, reply: any, payload: any) => {
         const responseTime = Date.now() - startTime;
-        
+
         const responseInfo: ResponseInfo = {
           statusCode: reply.statusCode,
-          headers: reply.getHeaders()
+          headers: reply.getHeaders(),
         };
 
         if (this.options.logResponseBody && payload) {
@@ -170,17 +153,12 @@ export class LoggingMiddleware {
 
         const responseMetadata = {
           response: responseInfo,
-          responseTime
+          responseTime,
         };
 
         const level = reply.statusCode >= 400 ? LogLevel.WARN : this.options.logLevel;
-        
-        this.logger.log(
-          level,
-          'Outgoing Response',
-          responseMetadata,
-          context
-        );
+
+        this.logger.log(level, 'Outgoing Response', responseMetadata, context);
       });
     };
   }
@@ -190,19 +168,14 @@ export class LoggingMiddleware {
     const requestId = this.options.generateRequestId();
     const context = { requestId, ...additionalContext };
 
-    this.logger.log(
-      this.options.logLevel,
-      'HTTP Request',
-      { request: requestInfo },
-      context
-    );
+    this.logger.log(this.options.logLevel, 'HTTP Request', { request: requestInfo }, context);
 
     return requestId;
   }
 
   logResponse(
-    requestId: string, 
-    responseInfo: ResponseInfo, 
+    requestId: string,
+    responseInfo: ResponseInfo,
     responseTime: number,
     additionalContext: Record<string, any> = {}
   ): void {
@@ -212,17 +185,16 @@ export class LoggingMiddleware {
     this.logger.log(
       level,
       'HTTP Response',
-      { 
-        response: responseInfo, 
-        responseTime 
+      {
+        response: responseInfo,
+        responseTime,
       },
       context
     );
   }
 
   private shouldSkip(path: string, method: string): boolean {
-    return this.options.skipPaths.includes(path) || 
-           this.options.skipMethods.includes(method);
+    return this.options.skipPaths.includes(path) || this.options.skipMethods.includes(method);
   }
 
   private filterHeaders(headers: Record<string, string>): Record<string, string> {

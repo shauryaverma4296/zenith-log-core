@@ -12,8 +12,8 @@ export interface ConfigurationProviderOptions {
 @injectable()
 export class ConfigurationProviderFactory {
   constructor(
-    private fileAdapter: FileConfigurationAdapter,
-    private envAdapter: EnvironmentConfigurationAdapter
+    private fileAdapterFactory: () => IConfigurationProvider,
+    private envAdapterFactory: () => IConfigurationProvider
   ) {}
 
   create(options: ConfigurationProviderOptions = {}): IConfigurationProvider {
@@ -23,19 +23,11 @@ export class ConfigurationProviderFactory {
 
     switch (options.configProvider) {
       case 'file':
-        // Use injected instance but configure it
-        if (options.configPath) {
-          return new FileConfigurationAdapter(options.configPath);
-        }
-        return this.fileAdapter;
+        return this.fileAdapterFactory();
       case 'environment':
-        // Use injected instance but configure it  
-        if (options.envPrefix) {
-          return new EnvironmentConfigurationAdapter(options.envPrefix);
-        }
-        return this.envAdapter;
+        return this.envAdapterFactory();
       default:
-        return this.envAdapter;
+        return this.envAdapterFactory();
     }
   }
 }

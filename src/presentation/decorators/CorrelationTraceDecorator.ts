@@ -1,7 +1,7 @@
 import { TraceCorrelationUseCase } from '../../application/use-cases/TraceCorrelationUseCase';
+import { CorrelationMiddleware } from '../middleware/CorrelationMiddleware';
 
 export interface TraceOptions {
-  correlationIdKey?: string;
   includeArgs?: boolean;
   includeResult?: boolean;
   logLevel?: 'debug' | 'info';
@@ -13,22 +13,23 @@ export function Trace(options: TraceOptions = {}) {
     const className = target.constructor.name;
 
     descriptor.value = async function (...args: any[]) {
-      // Try to extract correlation ID from various sources
-      const correlationId = extractCorrelationId(args, options.correlationIdKey) || generateCorrelationId();
+      // Get correlation ID from AsyncLocalStorage context
+      const correlationId = CorrelationMiddleware.getCorrelationId();
       
-      // Get trace service (assuming it's available in DI container)
-      const traceService = getTraceService();
-      
-      if (!traceService) {
+      // If no correlation context, just execute without tracing
+      if (!correlationId) {
         return method.apply(this, args);
       }
+      
+      // Get trace service
+      const traceService = getTraceService();
 
       const startTime = Date.now();
       
       try {
         // Log method start
         const metadata = options.includeArgs ? { args } : {};
-        traceService.startTrace(correlationId, propertyName, className, metadata);
+        traceService.startTrace(propertyName, className, metadata);
 
         // Execute the method
         const result = await method.apply(this, args);
@@ -36,46 +37,19 @@ export function Trace(options: TraceOptions = {}) {
         // Log method completion
         const duration = Date.now() - startTime;
         const resultMetadata = options.includeResult ? { result } : {};
-        traceService.endTrace(correlationId, propertyName, resultMetadata, undefined, duration);
+        traceService.endTrace(propertyName, resultMetadata, undefined, duration);
 
         return result;
       } catch (error) {
         // Log method error
         const duration = Date.now() - startTime;
-        traceService.endTrace(correlationId, propertyName, undefined, error as Error, duration);
+        traceService.endTrace(propertyName, undefined, error as Error, duration);
         throw error;
       }
     };
 
     return descriptor;
   };
-}
-
-function extractCorrelationId(args: any[], key?: string): string | null {
-  if (!args || args.length === 0) return null;
-
-  // Look for correlation ID in first argument if it's an object
-  const firstArg = args[0];
-  if (typeof firstArg === 'object' && firstArg !== null) {
-    const correlationKey = key || 'correlationId';
-    if (correlationKey in firstArg) {
-      return firstArg[correlationKey];
-    }
-    
-    // Also check common patterns
-    const commonKeys = ['correlationId', 'requestId', 'traceId', 'id'];
-    for (const commonKey of commonKeys) {
-      if (commonKey in firstArg) {
-        return firstArg[commonKey];
-      }
-    }
-  }
-
-  return null;
-}
-
-function generateCorrelationId(): string {
-  return `trace-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 // This function should be implemented to get the trace service from your DI container

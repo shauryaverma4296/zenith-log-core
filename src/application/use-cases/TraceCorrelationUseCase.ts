@@ -1,7 +1,7 @@
-import { injectable, inject } from 'tsyringe';
 import { ILogger } from '../../domain/interfaces/ILogger';
 import { LogLevel } from '../../domain/enums/LogLevel';
 import { LogMetadata, LogContext } from '../../domain/entities/LogEntry';
+import { CorrelationMiddleware } from '../../presentation/middleware/CorrelationMiddleware';
 
 export interface CorrelationTrace {
   correlationId: string;
@@ -23,7 +23,12 @@ export class TraceCorrelationUseCase {
     this.logger = logger;
   }
 
-  startTrace(correlationId: string, functionName: string, className?: string, metadata?: LogMetadata): void {
+  startTrace(functionName: string, className?: string, metadata?: LogMetadata): void {
+    const correlationId = CorrelationMiddleware.getCorrelationId();
+    if (!correlationId) {
+      // If no correlation context, skip tracing
+      return;
+    }
     const trace: CorrelationTrace = {
       correlationId,
       timestamp: new Date(),
@@ -40,7 +45,11 @@ export class TraceCorrelationUseCase {
     this.logger.debug(trace.message, trace.metadata, trace.context);
   }
 
-  endTrace(correlationId: string, functionName: string, result?: any, error?: Error, duration?: number): void {
+  endTrace(functionName: string, result?: any, error?: Error, duration?: number): void {
+    const correlationId = CorrelationMiddleware.getCorrelationId();
+    if (!correlationId) {
+      return;
+    }
     const level = error ? LogLevel.ERROR : LogLevel.DEBUG;
     const message = error 
       ? `Error in ${functionName}: ${error.message}` 
@@ -66,7 +75,11 @@ export class TraceCorrelationUseCase {
     }
   }
 
-  logStep(correlationId: string, step: string, metadata?: LogMetadata): void {
+  logStep(step: string, metadata?: LogMetadata): void {
+    const correlationId = CorrelationMiddleware.getCorrelationId();
+    if (!correlationId) {
+      return;
+    }
     const trace: CorrelationTrace = {
       correlationId,
       timestamp: new Date(),

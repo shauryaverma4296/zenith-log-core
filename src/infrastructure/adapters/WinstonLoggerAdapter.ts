@@ -5,6 +5,7 @@ import { ILogger } from '../../domain/interfaces/ILogger';
 import { LogLevel, LOG_LEVELS } from '../../domain/enums/LogLevel';
 import { LogEntry, LogMetadata, LogContext } from '../../domain/entities/LogEntry';
 import { LoggerConfiguration } from '../../domain/entities/LoggerConfiguration';
+import { CorrelationMiddleware } from '../../presentation/middleware/CorrelationMiddleware';
 
 export class WinstonLoggerAdapter implements ILogger {
   private readonly winstonLogger: winston.Logger;
@@ -168,9 +169,27 @@ export class WinstonLoggerAdapter implements ILogger {
     context: LogContext = {},
     error?: Error
   ): Record<string, any> {
+    // Automatically include correlation context if available
+    const correlationContext = CorrelationMiddleware.getContext();
+    const enrichedContext = {
+      ...this.defaultContext,
+      ...context
+    };
+
+    // Add correlation data if available
+    if (correlationContext) {
+      enrichedContext.correlationId = correlationContext.correlationId;
+      enrichedContext.requestId = correlationContext.requestId;
+      enrichedContext.userId = correlationContext.userId;
+      enrichedContext.sessionId = correlationContext.sessionId;
+      
+      // Add correlation metadata
+      Object.assign(metadata, correlationContext.metadata);
+    }
+
     const logData: Record<string, any> = {
       ...metadata,
-      context: { ...this.defaultContext, ...context }
+      context: enrichedContext
     };
 
     if (error) {

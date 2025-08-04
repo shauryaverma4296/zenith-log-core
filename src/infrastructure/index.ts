@@ -5,6 +5,7 @@ export * from './adapters/EnvironmentConfigurationAdapter';
 
 // Factories
 export * from './factories/WinstonLoggerFactory';
+export * from './factories/ConfigurationProviderFactory';
 
 // Formatters
 export * from './formatters/JsonLogFormatter';

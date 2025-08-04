@@ -15,34 +15,15 @@ import { TraceCorrelationUseCase } from '../application/use-cases/TraceCorrelati
 
 // Infrastructure implementations
 import { WinstonLoggerFactory } from '../infrastructure/factories/WinstonLoggerFactory';
-import { FileConfigurationAdapter } from '../infrastructure/adapters/FileConfigurationAdapter';
-import { EnvironmentConfigurationAdapter } from '../infrastructure/adapters/EnvironmentConfigurationAdapter';
+import { ConfigurationProviderFactory, ConfigurationProviderOptions } from '../infrastructure/factories/ConfigurationProviderFactory';
 import { LoggerConfiguration } from '../domain/entities/LoggerConfiguration';
 
 export class ContainerConfig {
-  static configure(options: {
-    configProvider?: 'file' | 'environment' | IConfigurationProvider;
-    configPath?: string;
-    envPrefix?: string;
+  static configure(options: ConfigurationProviderOptions & {
     defaultConfig?: LoggerConfiguration;
   } = {}): void {
-    // Configure configuration provider
-    let configProvider: IConfigurationProvider;
-    
-    if (typeof options.configProvider === 'object') {
-      configProvider = options.configProvider;
-    } else {
-      switch (options.configProvider) {
-        case 'file':
-          configProvider = new FileConfigurationAdapter(options.configPath);
-          break;
-        case 'environment':
-          configProvider = new EnvironmentConfigurationAdapter(options.envPrefix);
-          break;
-        default:
-          configProvider = new EnvironmentConfigurationAdapter();
-      }
-    }
+    // Configure configuration provider using factory
+    const configProvider = ConfigurationProviderFactory.create(options);
 
     // Register configuration provider
     container.registerInstance<IConfigurationProvider>('IConfigurationProvider', configProvider);

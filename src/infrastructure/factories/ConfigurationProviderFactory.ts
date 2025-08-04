@@ -31,22 +31,8 @@ export class ConfigurationProviderFactory {
     }
   }
 
-  static create(options: ConfigurationProviderOptions = {}): IConfigurationProvider {
-    // Static factory method for backwards compatibility - imports directly
-    const { FileConfigurationAdapter } = require('../adapters/FileConfigurationAdapter');
-    const { EnvironmentConfigurationAdapter } = require('../adapters/EnvironmentConfigurationAdapter');
-
-    if (typeof options.configProvider === 'object') {
-      return options.configProvider;
-    }
-
-    switch (options.configProvider) {
-      case 'file':
-        return new FileConfigurationAdapter(options.configPath);
-      case 'environment':
-        return new EnvironmentConfigurationAdapter(options.envPrefix);
-      default:
-        return new EnvironmentConfigurationAdapter();
-    }
+  static createWithContainer(options: ConfigurationProviderOptions = {}): IConfigurationProvider {
+    // This method should use the container to resolve dependencies
+    throw new Error('Use container.resolve<ConfigurationProviderFactory>().create() instead of static method');
   }
 }

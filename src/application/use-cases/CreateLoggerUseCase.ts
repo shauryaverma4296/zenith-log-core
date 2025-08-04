@@ -14,7 +14,6 @@ export interface CreateLoggerResponse {
   configuration: LoggerConfiguration;
 }
 
-@injectable()
 export class CreateLoggerUseCase {
   constructor(
     @inject('ILoggerFactory') private readonly loggerFactory: ILoggerFactory,

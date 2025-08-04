@@ -2,7 +2,6 @@ import { injectable, inject } from 'tsyringe';
 import { IConfigurationProvider } from '../../domain/interfaces/IConfigurationProvider';
 import { LoggerConfiguration } from '../../domain/entities/LoggerConfiguration';
 
-@injectable()
 export class ConfigurationService {
   constructor(
     @inject('IConfigurationProvider') private readonly configProvider: IConfigurationProvider

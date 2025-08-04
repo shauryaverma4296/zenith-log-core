@@ -15,13 +15,12 @@ export interface CorrelationTrace {
   duration?: number;
 }
 
-@injectable()
 export class TraceCorrelationUseCase {
   private traces: Map<string, CorrelationTrace[]> = new Map();
 
-  constructor(
-    @inject('ILogger') private readonly logger: ILogger
-  ) {}
+  constructor(logger) {
+    this.logger = logger;
+  }
 
   startTrace(correlationId: string, functionName: string, className?: string, metadata?: LogMetadata): void {
     const trace: CorrelationTrace = {

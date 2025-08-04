@@ -5,15 +5,14 @@ import { LoggerConfiguration } from '../../domain/entities/LoggerConfiguration';
 import { LogLevel } from '../../domain/enums/LogLevel';
 import { LogMetadata, LogContext } from '../../domain/entities/LogEntry';
 
-@injectable()
 export class LoggerService implements ILogger {
   private readonly logger: ILogger;
 
   constructor(
-    @inject('ILoggerFactory') private readonly loggerFactory: ILoggerFactory,
-    @inject('LoggerConfiguration') private readonly config: LoggerConfiguration
+    loggerFactory,
+    config
   ) {
-    this.logger = this.loggerFactory.createLoggerWithConfig(this.config);
+    this.logger = loggerFactory.createLoggerWithConfig(config);
   }
 
   error(message: string, metadata?: LogMetadata, context?: LogContext): void;

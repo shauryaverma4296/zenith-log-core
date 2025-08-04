@@ -5,7 +5,6 @@ import { IConfigurationProvider } from '../../domain/interfaces/IConfigurationPr
 import { LoggerConfiguration } from '../../domain/entities/LoggerConfiguration';
 import { WinstonLoggerAdapter } from '../adapters/WinstonLoggerAdapter';
 
-@injectable()
 export class WinstonLoggerFactory implements ILoggerFactory {
   private readonly loggers = new Map<string, ILogger>();
 

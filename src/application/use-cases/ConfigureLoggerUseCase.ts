@@ -13,7 +13,6 @@ export interface ConfigureLoggerResponse {
   validationErrors?: string[];
 }
 
-@injectable()
 export class ConfigureLoggerUseCase {
   constructor(
     @inject('ConfigurationService') private readonly configService: ConfigurationService

@@ -1,22 +1,41 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
+// Node.js library build configuration
+export default defineConfig({
+  build: {
+    lib: {
+      entry: path.resolve(__dirname, "src/index.ts"),
+      name: "WinstonLogger",
+      fileName: (format) => `index.${format}.js`,
+      formats: ["cjs", "es"]
+    },
+    rollupOptions: {
+      external: [
+        "winston",
+        "tsyringe", 
+        "reflect-metadata",
+        "class-transformer",
+        "class-validator",
+        "uuid",
+        "fs",
+        "path",
+        "express"
+      ],
+      output: {
+        globals: {
+          winston: "winston",
+          tsyringe: "tsyringe",
+          "reflect-metadata": "Reflect"
+        }
+      }
+    },
+    target: "node14",
+    sourcemap: true
   },
-  plugins: [
-    react(),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+});

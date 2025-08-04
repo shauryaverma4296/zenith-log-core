@@ -16,29 +16,22 @@ import { TraceCorrelationUseCase } from '../application/use-cases/TraceCorrelati
 // Infrastructure implementations
 import { WinstonLoggerFactory } from '../infrastructure/factories/WinstonLoggerFactory';
 import { ConfigurationProviderFactory, ConfigurationProviderOptions } from '../infrastructure/factories/ConfigurationProviderFactory';
+import { FileConfigurationAdapter } from '../infrastructure/adapters/FileConfigurationAdapter';
+import { EnvironmentConfigurationAdapter } from '../infrastructure/adapters/EnvironmentConfigurationAdapter';
 import { LoggerConfiguration } from '../domain/entities/LoggerConfiguration';
 
 export class ContainerConfig {
   static configure(options: ConfigurationProviderOptions & {
     defaultConfig?: LoggerConfiguration;
   } = {}): void {
-    // Register adapter factories first
-    container.registerSingleton('FileConfigurationAdapter', class {
-      create(path?: string) { 
-        const { FileConfigurationAdapter } = require('../infrastructure/adapters/FileConfigurationAdapter');
-        return new FileConfigurationAdapter(path);
-      }
-    });
-    
-    container.registerSingleton('EnvironmentConfigurationAdapter', class {
-      create(prefix?: string) {
-        const { EnvironmentConfigurationAdapter } = require('../infrastructure/adapters/EnvironmentConfigurationAdapter');
-        return new EnvironmentConfigurationAdapter(prefix);
-      }
-    });
+    // Register adapter classes
+    container.registerSingleton('FileConfigurationAdapter', FileConfigurationAdapter);
+    container.registerSingleton('EnvironmentConfigurationAdapter', EnvironmentConfigurationAdapter);
 
-    // Register and configure configuration provider using factory
+    // Register factory
     container.registerSingleton<ConfigurationProviderFactory>('ConfigurationProviderFactory', ConfigurationProviderFactory);
+    
+    // Create configuration provider using factory
     const factory = container.resolve<ConfigurationProviderFactory>('ConfigurationProviderFactory');
     const configProvider = factory.create(options);
 

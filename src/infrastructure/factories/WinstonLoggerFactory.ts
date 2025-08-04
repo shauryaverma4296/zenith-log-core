@@ -5,13 +5,13 @@ import { IConfigurationProvider } from '../../domain/interfaces/IConfigurationPr
 import { LoggerConfiguration } from '../../domain/entities/LoggerConfiguration';
 import { WinstonLoggerAdapter } from '../adapters/WinstonLoggerAdapter';
 
+@injectable()
 export class WinstonLoggerFactory implements ILoggerFactory {
   private readonly loggers = new Map<string, ILogger>();
-  private configProvider;
 
-  constructor(configProvider) {
-    this.configProvider = configProvider;
-  }
+  constructor(
+    @inject('IConfigurationProvider') private configProvider: IConfigurationProvider
+  ) {}
 
   createLogger(name: string = 'default'): ILogger {
     if (this.loggers.has(name)) {

@@ -1,5 +1,7 @@
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import { IConfigurationProvider } from '../../domain/interfaces/IConfigurationProvider';
+import { FileConfigurationAdapter } from '../adapters/FileConfigurationAdapter';
+import { EnvironmentConfigurationAdapter } from '../adapters/EnvironmentConfigurationAdapter';
 
 export interface ConfigurationProviderOptions {
   configProvider?: 'file' | 'environment' | IConfigurationProvider;
@@ -7,13 +9,11 @@ export interface ConfigurationProviderOptions {
   envPrefix?: string;
 }
 
-export type ConfigurationProviderType = 'file' | 'environment';
-
 @injectable()
 export class ConfigurationProviderFactory {
   constructor(
-    @inject('FileConfigurationAdapter') private fileAdapterFactory: any,
-    @inject('EnvironmentConfigurationAdapter') private envAdapterFactory: any
+    private fileAdapter: FileConfigurationAdapter,
+    private envAdapter: EnvironmentConfigurationAdapter
   ) {}
 
   create(options: ConfigurationProviderOptions = {}): IConfigurationProvider {
@@ -23,16 +23,19 @@ export class ConfigurationProviderFactory {
 
     switch (options.configProvider) {
       case 'file':
-        return this.fileAdapterFactory.create(options.configPath);
+        // Use injected instance but configure it
+        if (options.configPath) {
+          return new FileConfigurationAdapter(options.configPath);
+        }
+        return this.fileAdapter;
       case 'environment':
-        return this.envAdapterFactory.create(options.envPrefix);
+        // Use injected instance but configure it  
+        if (options.envPrefix) {
+          return new EnvironmentConfigurationAdapter(options.envPrefix);
+        }
+        return this.envAdapter;
       default:
-        return this.envAdapterFactory.create(options.envPrefix);
+        return this.envAdapter;
     }
-  }
-
-  static createWithContainer(options: ConfigurationProviderOptions = {}): IConfigurationProvider {
-    // This method should use the container to resolve dependencies
-    throw new Error('Use container.resolve<ConfigurationProviderFactory>().create() instead of static method');
   }
 }

@@ -2,12 +2,11 @@ import { injectable, inject } from 'tsyringe';
 import { IConfigurationProvider } from '../../domain/interfaces/IConfigurationProvider';
 import { LoggerConfiguration } from '../../domain/entities/LoggerConfiguration';
 
+@injectable()
 export class ConfigurationService {
-  private configProvider;
-
-  constructor(configProvider) {
-    this.configProvider = configProvider;
-  }
+  constructor(
+    @inject('IConfigurationProvider') private configProvider: IConfigurationProvider
+  ) {}
 
   async getConfiguration(name?: string): Promise<LoggerConfiguration> {
     return this.configProvider.getConfiguration(name);

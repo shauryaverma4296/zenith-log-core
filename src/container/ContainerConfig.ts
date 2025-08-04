@@ -22,13 +22,30 @@ export class ContainerConfig {
   static configure(options: ConfigurationProviderOptions & {
     defaultConfig?: LoggerConfiguration;
   } = {}): void {
-    // Configure configuration provider using factory
-    const configProvider = ConfigurationProviderFactory.create(options);
+    // Register adapter factories first
+    container.registerSingleton('FileConfigurationAdapter', class {
+      create(path?: string) { 
+        const { FileConfigurationAdapter } = require('../infrastructure/adapters/FileConfigurationAdapter');
+        return new FileConfigurationAdapter(path);
+      }
+    });
+    
+    container.registerSingleton('EnvironmentConfigurationAdapter', class {
+      create(prefix?: string) {
+        const { EnvironmentConfigurationAdapter } = require('../infrastructure/adapters/EnvironmentConfigurationAdapter');
+        return new EnvironmentConfigurationAdapter(prefix);
+      }
+    });
+
+    // Register and configure configuration provider using factory
+    container.registerSingleton<ConfigurationProviderFactory>('ConfigurationProviderFactory', ConfigurationProviderFactory);
+    const factory = container.resolve<ConfigurationProviderFactory>('ConfigurationProviderFactory');
+    const configProvider = factory.create(options);
 
     // Register configuration provider
     container.registerInstance<IConfigurationProvider>('IConfigurationProvider', configProvider);
 
-    // Register default configuration
+    // Register default configuration factory
     const defaultConfig = options.defaultConfig || new LoggerConfiguration();
     container.registerInstance<LoggerConfiguration>('LoggerConfiguration', defaultConfig);
 

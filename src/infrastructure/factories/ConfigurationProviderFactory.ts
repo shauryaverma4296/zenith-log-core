@@ -12,8 +12,8 @@ export type ConfigurationProviderType = 'file' | 'environment';
 @injectable()
 export class ConfigurationProviderFactory {
   constructor(
-    @inject('FileConfigurationAdapter') private fileAdapterFactory: (path?: string) => IConfigurationProvider,
-    @inject('EnvironmentConfigurationAdapter') private envAdapterFactory: (prefix?: string) => IConfigurationProvider
+    @inject('FileConfigurationAdapter') private fileAdapterFactory: any,
+    @inject('EnvironmentConfigurationAdapter') private envAdapterFactory: any
   ) {}
 
   create(options: ConfigurationProviderOptions = {}): IConfigurationProvider {
@@ -23,11 +23,11 @@ export class ConfigurationProviderFactory {
 
     switch (options.configProvider) {
       case 'file':
-        return this.fileAdapterFactory(options.configPath);
+        return this.fileAdapterFactory.create(options.configPath);
       case 'environment':
-        return this.envAdapterFactory(options.envPrefix);
+        return this.envAdapterFactory.create(options.envPrefix);
       default:
-        return this.envAdapterFactory();
+        return this.envAdapterFactory.create(options.envPrefix);
     }
   }
 

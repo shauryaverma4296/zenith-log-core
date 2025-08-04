@@ -15,10 +15,13 @@ export interface CreateLoggerResponse {
 }
 
 export class CreateLoggerUseCase {
-  constructor(
-    @inject('ILoggerFactory') private readonly loggerFactory: ILoggerFactory,
-    @inject('ConfigurationService') private readonly configService: ConfigurationService
-  ) {}
+  private loggerFactory;
+  private configService;
+
+  constructor(loggerFactory, configService) {
+    this.loggerFactory = loggerFactory;
+    this.configService = configService;
+  }
 
   async execute(request: CreateLoggerRequest): Promise<CreateLoggerResponse> {
     const baseConfig = await this.configService.getConfiguration(request.name);

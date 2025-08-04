@@ -7,10 +7,11 @@ import { WinstonLoggerAdapter } from '../adapters/WinstonLoggerAdapter';
 
 export class WinstonLoggerFactory implements ILoggerFactory {
   private readonly loggers = new Map<string, ILogger>();
+  private configProvider;
 
-  constructor(
-    @inject('IConfigurationProvider') private readonly configProvider: IConfigurationProvider
-  ) {}
+  constructor(configProvider) {
+    this.configProvider = configProvider;
+  }
 
   createLogger(name: string = 'default'): ILogger {
     if (this.loggers.has(name)) {

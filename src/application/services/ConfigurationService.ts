@@ -3,9 +3,11 @@ import { IConfigurationProvider } from '../../domain/interfaces/IConfigurationPr
 import { LoggerConfiguration } from '../../domain/entities/LoggerConfiguration';
 
 export class ConfigurationService {
-  constructor(
-    @inject('IConfigurationProvider') private readonly configProvider: IConfigurationProvider
-  ) {}
+  private configProvider;
+
+  constructor(configProvider) {
+    this.configProvider = configProvider;
+  }
 
   async getConfiguration(name?: string): Promise<LoggerConfiguration> {
     return this.configProvider.getConfiguration(name);

@@ -17,6 +17,7 @@ export interface CorrelationTrace {
 
 export class TraceCorrelationUseCase {
   private traces: Map<string, CorrelationTrace[]> = new Map();
+  private logger;
 
   constructor(logger) {
     this.logger = logger;

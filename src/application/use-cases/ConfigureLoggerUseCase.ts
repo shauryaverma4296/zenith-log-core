@@ -14,9 +14,11 @@ export interface ConfigureLoggerResponse {
 }
 
 export class ConfigureLoggerUseCase {
-  constructor(
-    @inject('ConfigurationService') private readonly configService: ConfigurationService
-  ) {}
+  private configService;
+
+  constructor(configService) {
+    this.configService = configService;
+  }
 
   async execute(request: ConfigureLoggerRequest): Promise<ConfigureLoggerResponse> {
     const validationErrors = this.validateConfiguration(request.configuration);

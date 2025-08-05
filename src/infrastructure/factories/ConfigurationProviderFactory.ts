@@ -1,4 +1,4 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { IConfigurationProvider } from '../../domain/interfaces/IConfigurationProvider';
 import { FileConfigurationAdapter } from '../adapters/FileConfigurationAdapter';
 import { EnvironmentConfigurationAdapter } from '../adapters/EnvironmentConfigurationAdapter';
@@ -12,8 +12,8 @@ export interface ConfigurationProviderOptions {
 @injectable()
 export class ConfigurationProviderFactory {
   constructor(
-    private fileAdapterFactory: () => IConfigurationProvider,
-    private envAdapterFactory: () => IConfigurationProvider
+    @inject('FileConfigurationAdapter') private fileAdapter: IConfigurationProvider,
+    @inject('EnvironmentConfigurationAdapter') private envAdapter: IConfigurationProvider
   ) {}
 
   create(options: ConfigurationProviderOptions = {}): IConfigurationProvider {
@@ -23,11 +23,11 @@ export class ConfigurationProviderFactory {
 
     switch (options.configProvider) {
       case 'file':
-        return this.fileAdapterFactory();
+        return this.fileAdapter;
       case 'environment':
-        return this.envAdapterFactory();
+        return this.envAdapter;
       default:
-        return this.envAdapterFactory();
+        return this.envAdapter;
     }
   }
 }

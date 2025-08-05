@@ -18,9 +18,7 @@ export class WinstonLoggerFactory implements ILoggerFactory {
       return this.loggers.get(name)!;
     }
 
-    // For synchronous creation, get default configuration from container
-    const baseConfig = container.resolve<LoggerConfiguration>('LoggerConfiguration');
-    const config = new LoggerConfiguration({ ...baseConfig, name });
+    const config = this.configProvider.getConfigurationSync(name);
     const logger = WinstonLoggerAdapter.fromConfiguration(config);
     
     this.loggers.set(name, logger);

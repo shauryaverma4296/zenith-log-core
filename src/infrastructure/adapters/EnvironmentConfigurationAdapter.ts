@@ -10,6 +10,10 @@ export class EnvironmentConfigurationAdapter implements IConfigurationProvider {
   }
 
   async getConfiguration(name?: string): Promise<LoggerConfiguration> {
+    return this.getConfigurationSync(name);
+  }
+
+  getConfigurationSync(name?: string): LoggerConfiguration {
     const envPrefix = name ? `${this.prefix}${name.toUpperCase()}_` : this.prefix;
     
     return new LoggerConfiguration({

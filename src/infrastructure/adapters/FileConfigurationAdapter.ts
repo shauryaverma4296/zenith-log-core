@@ -28,6 +28,23 @@ export class FileConfigurationAdapter implements IConfigurationProvider {
     }
   }
 
+  getConfigurationSync(name?: string): LoggerConfiguration {
+    try {
+      const fs = require('fs');
+      const configData = fs.readFileSync(this.configPath, 'utf-8');
+      const configJson = JSON.parse(configData);
+      
+      if (name && configJson[name]) {
+        return new LoggerConfiguration(configJson[name]);
+      }
+      
+      return new LoggerConfiguration(configJson.default || configJson);
+    } catch (error) {
+      // If file doesn't exist or is invalid, return default configuration
+      return new LoggerConfiguration();
+    }
+  }
+
   async setConfiguration(config: LoggerConfiguration): Promise<void> {
     try {
       let existingConfig = {};

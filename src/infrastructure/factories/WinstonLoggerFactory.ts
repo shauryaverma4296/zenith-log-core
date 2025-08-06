@@ -26,13 +26,21 @@ export class WinstonLoggerFactory implements ILoggerFactory {
   }
 
   createLoggerWithConfig(config: LoggerConfiguration): ILogger {
-    const existingLogger = this.loggers.get(config.name);
+    // Create a unique key for this configuration to allow multiple configs with same name
+    const configKey = `${config.name}_${JSON.stringify({
+      level: config.level,
+      transports: config.transports,
+      format: config.format,
+      silent: config.silent
+    })}`;
+    
+    const existingLogger = this.loggers.get(configKey);
     if (existingLogger) {
       return existingLogger;
     }
 
     const logger = WinstonLoggerAdapter.fromConfiguration(config);
-    this.loggers.set(config.name, logger);
+    this.loggers.set(configKey, logger);
     return logger;
   }
 

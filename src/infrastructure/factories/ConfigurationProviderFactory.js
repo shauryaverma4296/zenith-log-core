@@ -1,4 +1,4 @@
-import { injectable, inject } from 'tsyringe';
+
 import { FileConfigurationAdapter } from '../adapters/FileConfigurationAdapter.js';
 import { EnvironmentConfigurationAdapter } from '../adapters/EnvironmentConfigurationAdapter.js';
 
@@ -12,16 +12,12 @@ import { EnvironmentConfigurationAdapter } from '../adapters/EnvironmentConfigur
 /**
  * Configuration provider factory
  */
-@injectable()
 export class ConfigurationProviderFactory {
   /**
    * @param {Object} fileAdapter - File configuration adapter
    * @param {Object} envAdapter - Environment configuration adapter
    */
-  constructor(
-    @inject('FileConfigurationAdapter') fileAdapter,
-    @inject('EnvironmentConfigurationAdapter') envAdapter
-  ) {
+  constructor(fileAdapter, envAdapter) {
     this.fileAdapter = fileAdapter;
     this.envAdapter = envAdapter;
   }

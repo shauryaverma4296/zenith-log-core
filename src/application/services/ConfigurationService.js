@@ -1,15 +1,14 @@
-import { injectable, inject } from 'tsyringe';
+
 import { LoggerConfiguration } from '../../domain/entities/LoggerConfiguration.js';
 
 /**
  * Configuration service for managing logger configurations
  */
-@injectable()
 export class ConfigurationService {
   /**
    * @param {Object} configProvider - Configuration provider
    */
-  constructor(@inject('IConfigurationProvider') configProvider) {
+  constructor(configProvider) {
     this.configProvider = configProvider;
   }
 

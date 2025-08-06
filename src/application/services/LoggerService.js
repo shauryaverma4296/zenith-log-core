@@ -1,19 +1,15 @@
-import { injectable, inject } from 'tsyringe';
+
 import { LogEntry } from '../../domain/entities/LogEntry.js';
 
 /**
  * Logger service implementation
  */
-@injectable()
 export class LoggerService {
   /**
    * @param {Object} loggerFactory - Logger factory
    * @param {import('../../domain/entities/LoggerConfiguration.js').LoggerConfiguration} config - Logger configuration
    */
-  constructor(
-    @inject('ILoggerFactory') loggerFactory,
-    @inject('LoggerConfiguration') config
-  ) {
+  constructor(loggerFactory, config) {
     this.logger = loggerFactory.createLoggerWithConfig(config);
   }
 

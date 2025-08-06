@@ -1,5 +1,5 @@
-import 'reflect-metadata';
-import { container } from 'tsyringe';
+
+import { container } from '../../container/SimpleContainer.js';
 import { LogLevel } from '../../domain/enums/LogLevel.js';
 
 /**

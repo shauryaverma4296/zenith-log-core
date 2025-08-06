@@ -1,40 +1,41 @@
-import { injectable } from 'tsyringe';
+
 import { WinstonLoggerAdapter } from '../adapters/WinstonLoggerAdapter.js';
 
 /**
  * Winston logger factory implementation
  */
-@injectable()
 export class WinstonLoggerFactory {
-  constructor() {
-    /** @type {Map<string, import('../../domain/interfaces/ILogger.js').ILogger>} */
+  /**
+   * @param {Object} configProvider - Configuration provider
+   */
+  constructor(configProvider) {
+    this.configProvider = configProvider;
     this.loggers = new Map();
   }
 
   /**
-   * Create logger with optional name
-   * @param {string} [name] - Logger name
-   * @returns {import('../../domain/interfaces/ILogger.js').ILogger} Logger instance
+   * Create logger by name
+   * @param {string} name - Logger name
+   * @returns {Object} Logger instance
    */
-  createLogger(name) {
-    if (name && this.loggers.has(name)) {
+  createLogger(name = 'default') {
+    if (this.loggers.has(name)) {
       return this.loggers.get(name);
     }
 
-    const logger = new WinstonLoggerAdapter();
-    if (name) {
-      this.loggers.set(name, logger);
-    }
+    const config = this.configProvider.getConfigurationSync(name);
+    const logger = WinstonLoggerAdapter.fromConfiguration(config);
+    
+    this.loggers.set(name, logger);
     return logger;
   }
 
   /**
-   * Create logger with configuration
-   * @param {import('../../domain/entities/LoggerConfiguration.js').LoggerConfiguration} config - Logger configuration
-   * @returns {import('../../domain/interfaces/ILogger.js').ILogger} Logger instance
+   * Create logger with specific configuration
+   * @param {Object} config - Logger configuration
+   * @returns {Object} Logger instance
    */
   createLoggerWithConfig(config) {
-    // Create a unique key for this configuration to allow multiple configs with same name
     const configKey = `${config.name}_${JSON.stringify({
       level: config.level,
       transports: config.transports,
@@ -53,9 +54,26 @@ export class WinstonLoggerFactory {
   }
 
   /**
-   * Get existing logger by name
+   * Create logger asynchronously
    * @param {string} name - Logger name
-   * @returns {import('../../domain/interfaces/ILogger.js').ILogger|null} Logger instance or null
+   * @returns {Promise<Object>} Logger instance
+   */
+  async createLoggerAsync(name = 'default') {
+    if (this.loggers.has(name)) {
+      return this.loggers.get(name);
+    }
+
+    const config = await this.configProvider.getConfiguration(name);
+    const logger = WinstonLoggerAdapter.fromConfiguration(config);
+    
+    this.loggers.set(name, logger);
+    return logger;
+  }
+
+  /**
+   * Get existing logger
+   * @param {string} name - Logger name
+   * @returns {Object|null} Logger instance or null
    */
   getLogger(name) {
     return this.loggers.get(name) || null;
@@ -71,18 +89,26 @@ export class WinstonLoggerFactory {
   }
 
   /**
-   * Remove logger by name
+   * Remove logger
    * @param {string} name - Logger name
    * @returns {boolean} True if logger was removed
    */
   removeLogger(name) {
-    return this.loggers.delete(name);
+    const logger = this.loggers.get(name);
+    if (logger) {
+      logger.close().catch(console.error);
+      return this.loggers.delete(name);
+    }
+    return false;
   }
 
   /**
    * Clear all loggers
    */
   clearLoggers() {
+    for (const [name, logger] of this.loggers) {
+      logger.close().catch(console.error);
+    }
     this.loggers.clear();
   }
 }

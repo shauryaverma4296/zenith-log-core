@@ -1,5 +1,5 @@
+
 // Main entry point for the logger package
-import 'reflect-metadata';
 
 // Export all domain interfaces and entities
 export * from './domain/index.js';

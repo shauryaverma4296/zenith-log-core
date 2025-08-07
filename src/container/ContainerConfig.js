@@ -15,28 +15,18 @@ class ContainerConfig {
       getConfiguration: (name) => Promise.resolve(defaultConfig),
       getConfigurationSync: (name) => defaultConfig
     };
-    container.registerInstance('IConfigurationProvider', configProvider);
-
-    // Register default logger configuration
-    container.registerInstance('LoggerConfiguration', defaultConfig);
 
     // Register logger factory
     container.registerFactory(
       'ILoggerFactory',
-      () => {
-        const configProvider = container.resolve('IConfigurationProvider');
-        return new WinstonLoggerFactory(configProvider);
-      },
+      () => new WinstonLoggerFactory(configProvider),
       true
     );
 
     // Register application services
     container.registerFactory(
       'ConfigurationService',
-      () => {
-        const configProvider = container.resolve('IConfigurationProvider');
-        return new ConfigurationService(configProvider);
-      },
+      () => new ConfigurationService(configProvider),
       true
     );
 
@@ -44,8 +34,7 @@ class ContainerConfig {
       'LoggerService',
       () => {
         const loggerFactory = container.resolve('ILoggerFactory');
-        const config = container.resolve('LoggerConfiguration');
-        return new LoggerService(loggerFactory, config);
+        return new LoggerService(loggerFactory, defaultConfig);
       },
       true
     );

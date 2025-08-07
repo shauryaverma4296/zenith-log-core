@@ -30,7 +30,21 @@ class WinstonLoggerAdapter {
                 level: transportConfig.level || config.level,
                 db: transportConfig.options?.connectionString || 'mongodb://localhost:27017/logs',
                 collection: transportConfig.options?.collection || 'logs',
-                format: winston.format.json(),
+                format: winston.format.combine(
+                  winston.format.timestamp(),
+                  winston.format.json(),
+                  winston.format.printf(({ timestamp, level, message, ...meta }) => {
+                    const logEntry = {
+                      timestamp,
+                      level,
+                      message,
+                      event: meta.event || 'general',
+                      correlationId: meta.correlationId || null,
+                      ...meta
+                    };
+                    return JSON.stringify(logEntry);
+                  })
+                ),
                 ...transportConfig.options,
               })
             );
@@ -136,6 +150,11 @@ class WinstonLoggerAdapter {
       ...this.defaultContext,
       ...context,
     };
+
+    // Add event field if not present
+    if (!logData.event) {
+      logData.event = 'general';
+    }
 
     // Add correlation context if available
     try {

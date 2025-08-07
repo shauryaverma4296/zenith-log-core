@@ -1,6 +1,11 @@
 // Entities
-export * from './entities/LogEntry.js';
-export * from './entities/LoggerConfiguration.js';
+const { LoggerConfiguration } = require('./entities/LoggerConfiguration.js');
 
 // Enums
-export * from './enums/LogLevel.js';
+const { LogLevel, LOG_LEVELS } = require('./enums/LogLevel.js');
+
+module.exports = {
+  LoggerConfiguration,
+  LogLevel,
+  LOG_LEVELS,
+};

@@ -1,3 +1,8 @@
+const { ContainerConfig } = require('./ContainerConfig.js');
+const { SimpleContainer, container } = require('./SimpleContainer.js');
 
-export * from './ContainerConfig.js';
-export * from './SimpleContainer.js';
+module.exports = {
+  ContainerConfig,
+  SimpleContainer,
+  container,
+};

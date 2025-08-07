@@ -1,15 +1,8 @@
-
-import { LogEntry } from '../../domain/entities/LogEntry.js';
-
-/**
- * Logger service implementation
- */
-export class LoggerService {
-  /**
-   * @param {Object} loggerFactory - Logger factory
-   * @param {import('../../domain/entities/LoggerConfiguration.js').LoggerConfiguration} config - Logger configuration
-   */
+class LoggerService {
   constructor(loggerFactory, config) {
+    console.log({
+      config,
+    });
     this.logger = loggerFactory.createLoggerWithConfig(config);
   }
 
@@ -47,43 +40,25 @@ export class LoggerService {
 
   log(levelOrMessage, messageOrMetadata, metadataOrContext, contextOrError, error) {
     if (arguments[1] instanceof Error) {
-      this.logger.log(levelOrMessage, messageOrMetadata, arguments[1], metadataOrContext, contextOrError);
+      this.logger.log(
+        levelOrMessage,
+        messageOrMetadata,
+        arguments[1],
+        metadataOrContext,
+        contextOrError
+      );
     } else {
       this.logger.log(levelOrMessage, messageOrMetadata, metadataOrContext, contextOrError, error);
     }
   }
 
-  /**
-   * Log entry directly
-   * @param {LogEntry|Object} entry - Log entry
-   */
   logEntry(entry) {
     this.logger.logEntry(entry);
   }
 
-  /**
-   * Create child logger with context
-   * @param {Object} context - Log context
-   * @returns {Object} Child logger
-   */
-  child(context) {
-    return this.logger.child(context);
-  }
-
-  /**
-   * Check if level is enabled
-   * @param {string} level - Log level
-   * @returns {boolean} True if level is enabled
-   */
-  isLevelEnabled(level) {
-    return this.logger.isLevelEnabled(level);
-  }
-
-  /**
-   * Close logger
-   * @returns {Promise<void>}
-   */
   async close() {
     return this.logger.close();
   }
 }
+
+module.exports = { LoggerService };

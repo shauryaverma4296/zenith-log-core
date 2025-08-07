@@ -1,12 +1,12 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "winston_express_logger",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "main": "src/index.js",
   "scripts": {
     "tsc": "tsc",
     "tsc:watch": "tsc --watch",
-    "dev": "ts-node src/index.ts",
+    "dev": "node src/index.js",
     "build": "tsc",
     "start": "node dist/index.js",
     "dev:express": "ts-node examples/express-no-prop-drilling.js",
@@ -16,19 +16,11 @@
   "dependencies": {
     "@types/express": "^5.0.3",
     "@types/uuid": "^10.0.0",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.462.0",
-    "reflect-metadata": "^0.1.14",
     "uuid": "^11.1.0",
     "winston": "^3.17.0",
-    "winston-mongodb": "^7.0.0",
-    "winston-mysql": "^1.1.1"
+    "winston-mongodb": "^7.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.9.0",
-    "@types/node": "^22.5.5",
-    "eslint": "^9.9.0",
-    "typescript": "^5.5.3",
-    "typescript-eslint": "^8.0.1"
+    "eslint": "^9.9.0"
   }
 }

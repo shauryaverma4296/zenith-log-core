@@ -1,31 +1,17 @@
-/**
- * JSON log formatter implementation
- */
-export class JsonLogFormatter {
-  /**
-   * @param {Object} options - Formatter options
-   * @param {number} [options.space] - JSON.stringify space parameter
-   * @param {boolean} [options.includeMeta] - Include metadata in output
-   * @param {boolean} [options.includeContext] - Include context in output
-   */
+class JsonLogFormatter {
   constructor(options = {}) {
     this.options = {
       space: options.space || 0,
       includeMeta: options.includeMeta !== false,
-      includeContext: options.includeContext !== false
+      includeContext: options.includeContext !== false,
     };
   }
 
-  /**
-   * Format log entry as JSON string
-   * @param {import('../../domain/entities/LogEntry.js').LogEntry} entry - Log entry to format
-   * @returns {string} Formatted log string
-   */
   format(entry) {
     const logObject = {
       timestamp: entry.timestamp.toISOString(),
       level: entry.level,
-      message: entry.message
+      message: entry.message,
     };
 
     if (this.options.includeMeta && Object.keys(entry.metadata).length > 0) {
@@ -40,7 +26,7 @@ export class JsonLogFormatter {
       logObject.error = {
         name: entry.error.name,
         message: entry.error.message,
-        stack: entry.error.stack
+        stack: entry.error.stack,
       };
     }
 
@@ -51,3 +37,5 @@ export class JsonLogFormatter {
     return 'json';
   }
 }
+
+module.exports = { JsonLogFormatter };

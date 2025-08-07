@@ -1,84 +1,41 @@
-import winston from 'winston';
-import { LogEntry } from '../../domain/entities/LogEntry.js';
-import { CorrelationMiddleware } from '../../presentation/middleware/CorrelationMiddleware.js';
+const winston = require('winston');
+const { CorrelationMiddleware } = require('../../presentation/middleware/CorrelationMiddleware.js');
 
-/**
- * Winston logger adapter implementation
- */
-export class WinstonLoggerAdapter {
-  /**
-   * @param {winston.Logger} winstonLogger - Winston logger instance
-   * @param {Object} defaultContext - Default context for all logs
-   */
+class WinstonLoggerAdapter {
   constructor(winstonLogger, defaultContext = {}) {
     this.winston = winstonLogger;
     this.defaultContext = defaultContext;
   }
 
-  /**
-   * Create logger from configuration
-   * @param {import('../../domain/entities/LoggerConfiguration.js').LoggerConfiguration} config - Logger configuration
-   * @returns {WinstonLoggerAdapter} Logger instance
-   */
   static fromConfiguration(config) {
     const transports = [];
 
-    // Configure transports based on configuration
     for (const transportConfig of config.transports) {
       switch (transportConfig.type) {
         case 'console':
-          transports.push(new winston.transports.Console({
-            level: transportConfig.level || config.level,
-            format: winston.format.combine(
-              winston.format.colorize(),
-              winston.format.simple()
-            ),
-            ...transportConfig.options
-          }));
-          break;
-
-        case 'file':
-          transports.push(new winston.transports.File({
-            level: transportConfig.level || config.level,
-            filename: transportConfig.options?.filename || 'app.log',
-            format: winston.format.json(),
-            ...transportConfig.options
-          }));
-          break;
-
-        case 'http':
-          transports.push(new winston.transports.Http({
-            level: transportConfig.level || config.level,
-            ...transportConfig.options
-          }));
+          transports.push(
+            new winston.transports.Console({
+              level: transportConfig.level || config.level,
+              format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+              ...transportConfig.options,
+            })
+          );
           break;
 
         case 'mongodb':
-          // Requires winston-mongodb package
           try {
             const MongoDB = require('winston-mongodb').MongoDB;
-            transports.push(new MongoDB({
-              level: transportConfig.level || config.level,
-              db: transportConfig.options?.connectionString || 'mongodb://localhost:27017/logs',
-              collection: transportConfig.options?.collection || 'logs',
-              format: winston.format.json(),
-              ...transportConfig.options
-            }));
+            transports.push(
+              new MongoDB({
+                level: transportConfig.level || config.level,
+                db: transportConfig.options?.connectionString || 'mongodb://localhost:27017/logs',
+                collection: transportConfig.options?.collection || 'logs',
+                format: winston.format.json(),
+                ...transportConfig.options,
+              })
+            );
           } catch (error) {
             console.warn('MongoDB transport not available:', error.message);
-          }
-          break;
-
-        case 'mysql':
-          // Requires winston-mysql package
-          try {
-            const MySQL = require('winston-mysql');
-            transports.push(new MySQL({
-              level: transportConfig.level || config.level,
-              ...transportConfig.options
-            }));
-          } catch (error) {
-            console.warn('MySQL transport not available:', error.message);
           }
           break;
       }
@@ -93,7 +50,7 @@ export class WinstonLoggerAdapter {
       silent: config.silent,
       exitOnError: config.exitOnError,
       handleExceptions: config.handleExceptions,
-      handleRejections: config.handleRejections
+      handleRejections: config.handleRejections,
     });
 
     return new WinstonLoggerAdapter(winstonLogger);
@@ -132,7 +89,10 @@ export class WinstonLoggerAdapter {
   }
 
   log(levelOrMessage, messageOrMetadata, metadataOrContext, contextOrError, error) {
-    let level, message, metadata = {}, context = {};
+    let level,
+      message,
+      metadata = {},
+      context = {};
 
     if (typeof levelOrMessage === 'string' && typeof messageOrMetadata === 'string') {
       // log(level, message, metadata?, context?, error?)
@@ -164,30 +124,17 @@ export class WinstonLoggerAdapter {
     this.winston.log(entry.level, entry.message, logData);
   }
 
-  child(context) {
-    const extendedContext = { ...this.defaultContext, ...context };
-    return new WinstonLoggerAdapter(this.winston, extendedContext);
-  }
-
-  isLevelEnabled(level) {
-    return this.winston.isLevelEnabled(level);
-  }
-
   async close() {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       this.winston.close(resolve);
     });
   }
 
-  /**
-   * Build log data with correlation context
-   * @private
-   */
   buildLogData(metadata = {}, context = {}, error) {
     const logData = {
       ...metadata,
       ...this.defaultContext,
-      ...context
+      ...context,
     };
 
     // Add correlation context if available
@@ -213,10 +160,12 @@ export class WinstonLoggerAdapter {
       logData.error = {
         name: error.name,
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       };
     }
 
     return logData;
   }
 }
+
+module.exports = { WinstonLoggerAdapter };

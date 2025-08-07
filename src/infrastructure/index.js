@@ -1,13 +1,16 @@
 // Adapters
-export * from './adapters/WinstonLoggerAdapter.js';
-export * from './adapters/FileConfigurationAdapter.js';
-export * from './adapters/EnvironmentConfigurationAdapter.js';
+const { WinstonLoggerAdapter } = require('./adapters/WinstonLoggerAdapter.js');
 
 // Factories
-export * from './factories/WinstonLoggerFactory.js';
-export * from './factories/ConfigurationProviderFactory.js';
+const { WinstonLoggerFactory } = require('./factories/WinstonLoggerFactory.js');
+const { ConfigurationProviderFactory } = require('./factories/ConfigurationProviderFactory.js');
 
 // Formatters
-export * from './formatters/JsonLogFormatter.js';
-export * from './formatters/TextLogFormatter.js';
-export * from './formatters/StructuredLogFormatter.js';
+const { JsonLogFormatter } = require('./formatters/JsonLogFormatter.js');
+
+module.exports = {
+  WinstonLoggerAdapter,
+  WinstonLoggerFactory,
+  ConfigurationProviderFactory,
+  JsonLogFormatter,
+};

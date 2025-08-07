@@ -1,8 +1,10 @@
 // Services
-export * from './services/LoggerService.js';
-export * from './services/ConfigurationService.js';
+const { LoggerService } = require('./services/LoggerService.js');
+const { ConfigurationService } = require('./services/ConfigurationService.js');
 
 // Use Cases
-export * from './use-cases/CreateLoggerUseCase.js';
-export * from './use-cases/ConfigureLoggerUseCase.js';
-export * from './use-cases/TraceCorrelationUseCase.js';
+
+module.exports = {
+  LoggerService,
+  ConfigurationService,
+};

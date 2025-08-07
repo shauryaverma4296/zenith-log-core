@@ -3,7 +3,6 @@ const { container } = require('./SimpleContainer.js');
 const { WinstonLoggerFactory } = require('../infrastructure/factories/WinstonLoggerFactory.js');
 
 const { ConfigurationService } = require('../application/services/ConfigurationService.js');
-const { LoggerService } = require('../application/services/LoggerService.js');
 
 class ContainerConfig {
   static configure(defaultConfig = {}) {
@@ -29,15 +28,11 @@ class ContainerConfig {
       true
     );
 
-    container.registerFactory(
-      'LoggerService',
-      () => {
-        const loggerFactory = container.resolve('ILoggerFactory');
-        return new LoggerService(loggerFactory, defaultConfig);
-      },
-      true
-    );
-    container.registerFactory('ILogger', () => container.resolve('LoggerService'), false);
+    // Register logger directly using factory
+    container.registerFactory('ILogger', () => {
+      const factory = container.resolve('ILoggerFactory');
+      return factory.createLoggerWithConfig(defaultConfig);
+    }, false);
   }
 
   static getLogger(name) {

@@ -41,13 +41,14 @@ class LoggingMiddleware {
       // Capture response
       const originalEnd = res.end;
       let responseBody;
+      const self = this;
 
       res.end = function (chunk, encoding) {
-        if (chunk && this.options.logResponseBody) {
+        if (chunk && self.options.logResponseBody) {
           responseBody = chunk.toString();
         }
         originalEnd.call(this, chunk, encoding);
-      }.bind(this);
+      };
 
       // Log response when request completes
       res.on('finish', () => {

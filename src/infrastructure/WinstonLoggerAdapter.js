@@ -1,5 +1,5 @@
 const winston = require('winston');
-const { CorrelationMiddleware } = require('../../presentation/middleware/CorrelationMiddleware.js');
+const { CorrelationMiddleware } = require('../middleware/CorrelationMiddleware.js');
 
 class WinstonLoggerAdapter {
   constructor(winstonLogger, defaultContext = {}) {

@@ -12,14 +12,6 @@ class LoggerConfiguration {
     this.handleRejections = config.handleRejections || true;
     this.defaultMetadata = config.defaultMetadata || {};
   }
-
-  static fromEnvironment() {
-    return new LoggerConfiguration({
-      level: process.env.LOG_LEVEL || LogLevel.INFO,
-      silent: process.env.LOG_SILENT === 'true',
-      name: process.env.LOG_NAME || 'app',
-    });
-  }
 }
 
 module.exports = { LoggerConfiguration };

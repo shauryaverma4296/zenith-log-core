@@ -1,4 +1,4 @@
-const { WinstonLoggerAdapter } = require('../adapters/WinstonLoggerAdapter.js');
+const { WinstonLoggerAdapter } = require('./WinstonLoggerAdapter.js');
 
 class WinstonLoggerFactory {
   constructor(configProvider) {

@@ -1,14 +1,11 @@
 try {
-  console.log('Loading domain...');
-  const domain = require('./domain/index.js');
-  console.log('Loading application...');
-  const application = require('./application/index.js');
   console.log('Loading infrastructure...');
   const infrastructure = require('./infrastructure/index.js');
-  console.log('Loading presentation...');
-  const presentation = require('./presentation/index.js');
   console.log('Loading container...');
   const container = require('./container/index.js');
+  const { LoggingMiddleware, CorrelationMiddleware } = require('./middleware');
+  const { LOG_LEVELS, LogLevel } = require('./enums');
+
   const { ContainerConfig } = require('./container/ContainerConfig.js');
 
   console.log('All modules loaded successfully');
@@ -21,12 +18,13 @@ try {
 
   // Export everything
   module.exports = {
-    ...domain,
-    ...application,
     ...infrastructure,
-    ...presentation,
     ...container,
     initializeLogger,
+    LOG_LEVELS,
+    LogLevel,
+    LoggingMiddleware,
+    CorrelationMiddleware,
     Logger: ContainerConfig,
   };
 

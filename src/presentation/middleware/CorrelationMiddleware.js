@@ -115,14 +115,6 @@ class CorrelationMiddleware {
   static getMetadata() {
     return contextManager.getMetadata();
   }
-
-  // Method to set metadata in current context
-  static setMetadata(metadata) {
-    const currentContext = contextManager.getContext();
-    if (currentContext) {
-      Object.assign(currentContext.metadata, metadata);
-    }
-  }
 }
 
 module.exports = { CorrelationMiddleware };

@@ -1,5 +1,9 @@
 const { container } = require('./SimpleContainer.js');
+
 const { WinstonLoggerFactory } = require('../infrastructure/factories/WinstonLoggerFactory.js');
+
+const { ConfigurationService } = require('../application/services/ConfigurationService.js');
+const { LoggerService } = require('../application/services/LoggerService.js');
 
 class ContainerConfig {
   static configure(defaultConfig = {}) {
@@ -12,20 +16,37 @@ class ContainerConfig {
       getConfigurationSync: (name) => defaultConfig
     };
 
-    // Register logger factory only
+    // Register logger factory
     container.registerFactory(
       'ILoggerFactory',
       () => new WinstonLoggerFactory(configProvider),
       true
     );
+
+    // Register application services
+    container.registerFactory(
+      'ConfigurationService',
+      () => new ConfigurationService(configProvider),
+      true
+    );
+
+    container.registerFactory(
+      'LoggerService',
+      () => {
+        const loggerFactory = container.resolve('ILoggerFactory');
+        return new LoggerService(loggerFactory, defaultConfig);
+      },
+      true
+    );
+    container.registerFactory('ILogger', () => container.resolve('LoggerService'), false);
   }
 
   static getLogger(name) {
-    const factory = container.resolve('ILoggerFactory');
     if (name) {
+      const factory = container.resolve('ILoggerFactory');
       return factory.createLogger(name);
     }
-    return factory.createLogger('default');
+    return container.resolve('ILogger');
   }
 
   static reset() {

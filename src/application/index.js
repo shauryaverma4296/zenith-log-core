@@ -1,5 +1,10 @@
+// Services
+const { LoggerService } = require('./services/LoggerService.js');
+const { ConfigurationService } = require('./services/ConfigurationService.js');
+
 // Use Cases
 
 module.exports = {
-  // No services exported - using direct logger factory approach
+  LoggerService,
+  ConfigurationService,
 };

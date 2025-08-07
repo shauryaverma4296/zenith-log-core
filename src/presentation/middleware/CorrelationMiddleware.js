@@ -36,6 +36,7 @@ class CorrelationMiddleware {
   constructor(options = {}) {
     this.options = {
       correlationIdHeader: options.correlationIdHeader || 'x-correlation-id',
+      tibicoTransactionId: options.correlationIdHeader || 'transaction_id',
       requestIdHeader: options.requestIdHeader || 'x-request-id',
       generateCorrelationId: options.generateCorrelationId || (() => randomUUID()),
       generateRequestId: options.generateRequestId || (() => randomUUID()),
@@ -56,6 +57,9 @@ class CorrelationMiddleware {
       // Extract or generate correlation ID
       const correlationId =
         req.headers[this.options.correlationIdHeader] || this.options.generateCorrelationId();
+
+      const tibicoTransactionId =
+        req.header[this.options.correlationIdHeader] || this.options.generateCorrelationId();
 
       // Extract or generate request ID
       const requestId =
@@ -79,15 +83,18 @@ class CorrelationMiddleware {
       // Set response headers
       res.setHeader(this.options.correlationIdHeader, correlationId);
       res.setHeader(this.options.requestIdHeader, requestId);
+      res.setHeader(this.options.tibicoTransactionId, tibicoTransactionId);
 
       // Attach to request object for backward compatibility
       req.correlationId = correlationId;
+      req.tibicoTransactionId = tibicoTransactionId;
       req.requestId = requestId;
       req.correlationContext = { correlationId, requestId, metadata };
 
       // Create correlation context
       const context = {
         correlationId,
+        tibicoTransactionId,
         requestId,
         metadata,
       };
@@ -97,23 +104,6 @@ class CorrelationMiddleware {
         next();
       });
     };
-  }
-
-  // Static methods for accessing context from anywhere
-  static getCorrelationId() {
-    return contextManager.getCorrelationId();
-  }
-
-  static getRequestId() {
-    return contextManager.getRequestId();
-  }
-
-  static getContext() {
-    return contextManager.getContext();
-  }
-
-  static getMetadata() {
-    return contextManager.getMetadata();
   }
 }
 

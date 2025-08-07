@@ -40,7 +40,8 @@ class WinstonLoggerAdapter {
                       message,
                       event: meta.event || 'general',
                       correlationId: meta.correlationId || null,
-                      ...meta
+                      tibicoTransactionId: meta.correlationId || null,
+                      ...meta,
                     };
                     return JSON.stringify(logEntry);
                   })

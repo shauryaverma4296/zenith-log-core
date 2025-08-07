@@ -12,8 +12,7 @@ class ContainerConfig {
 
     // Create simple configuration provider
     const configProvider = {
-      getConfiguration: (name) => Promise.resolve(defaultConfig),
-      getConfigurationSync: (name) => defaultConfig
+      getConfigurationSync: () => defaultConfig,
     };
 
     // Register logger factory

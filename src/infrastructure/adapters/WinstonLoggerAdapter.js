@@ -30,22 +30,7 @@ class WinstonLoggerAdapter {
                 level: transportConfig.level || config.level,
                 db: transportConfig.options?.connectionString || 'mongodb://localhost:27017/logs',
                 collection: transportConfig.options?.collection || 'logs',
-                format: winston.format.combine(
-                  winston.format.timestamp(),
-                  winston.format.json(),
-                  winston.format.printf(({ timestamp, level, message, ...meta }) => {
-                    const logEntry = {
-                      timestamp,
-                      level,
-                      message,
-                      event: meta.event || 'general',
-                      correlationId: meta.correlationId || null,
-                      tibicoTransactionId: meta.correlationId || null,
-                      ...meta,
-                    };
-                    return JSON.stringify(logEntry);
-                  })
-                ),
+                format: winston.format.json(),
                 ...transportConfig.options,
               })
             );
@@ -104,39 +89,14 @@ class WinstonLoggerAdapter {
   }
 
   log(levelOrMessage, messageOrMetadata, metadataOrContext, contextOrError, error) {
-    let level,
-      message,
-      metadata = {},
+    let metadata = {},
       context = {};
 
-    if (typeof levelOrMessage === 'string' && typeof messageOrMetadata === 'string') {
-      // log(level, message, metadata?, context?, error?)
-      level = levelOrMessage;
-      message = messageOrMetadata;
-      metadata = metadataOrContext || {};
-      context = contextOrError || {};
-      if (error instanceof Error) {
-        // error parameter provided
-      } else if (contextOrError instanceof Error) {
-        // error in context position
-        error = contextOrError;
-        context = {};
-      }
-    } else {
-      // Fallback for other signatures
-      level = levelOrMessage;
-      message = messageOrMetadata;
-      metadata = metadataOrContext || {};
-      context = contextOrError || {};
-    }
+    metadata = metadataOrContext || {};
+    context = contextOrError || {};
 
-    const logData = this.buildLogData(metadata, context, error);
-    this.winston.log(level, message, logData);
-  }
-
-  logEntry(entry) {
-    const logData = this.buildLogData(entry.metadata, entry.context, entry.error);
-    this.winston.log(entry.level, entry.message, logData);
+    const logData = this.buildLogData(metadata, context);
+    this.winston.log(levelOrMessage, messageOrMetadata, logData);
   }
 
   async close() {
@@ -145,7 +105,7 @@ class WinstonLoggerAdapter {
     });
   }
 
-  buildLogData(metadata = {}, context = {}, error) {
+  buildLogData(metadata = {}, context = {}) {
     const logData = {
       ...metadata,
       ...this.defaultContext,
@@ -158,30 +118,20 @@ class WinstonLoggerAdapter {
     }
 
     // Add correlation context if available
-    try {
-      const correlationContext = CorrelationMiddleware.getContext();
-      if (correlationContext) {
-        if (correlationContext.correlationId) {
-          logData.correlationId = correlationContext.correlationId;
-        }
-        if (correlationContext.requestId) {
-          logData.requestId = correlationContext.requestId;
-        }
-        if (correlationContext.metadata) {
-          Object.assign(logData, correlationContext.metadata);
-        }
+    const correlationContext = CorrelationMiddleware.getContext();
+    if (correlationContext) {
+      if (correlationContext.correlationId) {
+        logData.correlationId = correlationContext.correlationId;
       }
-    } catch (err) {
-      // Ignore correlation context errors
-    }
-
-    // Add error information
-    if (error) {
-      logData.error = {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      };
+      if (correlationContext.requestId) {
+        logData.requestId = correlationContext.requestId;
+      }
+      if (correlationContext.tibcoTransactionId) {
+        logData.tibcoTransactionId = correlationContext.tibcoTransactionId;
+      }
+      if (correlationContext.metadata) {
+        Object.assign(logData, correlationContext.metadata);
+      }
     }
 
     return logData;

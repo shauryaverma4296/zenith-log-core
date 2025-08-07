@@ -12,21 +12,6 @@ class CorrelationContextManager {
   getContext() {
     return this.asyncLocalStorage.getStore();
   }
-
-  getCorrelationId() {
-    const context = this.getContext();
-    return context?.correlationId;
-  }
-
-  getRequestId() {
-    const context = this.getContext();
-    return context?.requestId;
-  }
-
-  getMetadata() {
-    const context = this.getContext();
-    return context?.metadata;
-  }
 }
 
 // Singleton instance
@@ -36,7 +21,7 @@ class CorrelationMiddleware {
   constructor(options = {}) {
     this.options = {
       correlationIdHeader: options.correlationIdHeader || 'x-correlation-id',
-      tibicoTransactionId: options.correlationIdHeader || 'transaction_id',
+      tibcoTransactionId: options.correlationIdHeader || 'transaction_id',
       requestIdHeader: options.requestIdHeader || 'x-request-id',
       generateCorrelationId: options.generateCorrelationId || (() => randomUUID()),
       generateRequestId: options.generateRequestId || (() => randomUUID()),
@@ -58,8 +43,8 @@ class CorrelationMiddleware {
       const correlationId =
         req.headers[this.options.correlationIdHeader] || this.options.generateCorrelationId();
 
-      const tibicoTransactionId =
-        req.header[this.options.correlationIdHeader] || this.options.generateCorrelationId();
+      const tibcoTransactionId =
+        req.headers[this.options.tibcoTransactionId] || this.options.generateCorrelationId();
 
       // Extract or generate request ID
       const requestId =
@@ -83,18 +68,18 @@ class CorrelationMiddleware {
       // Set response headers
       res.setHeader(this.options.correlationIdHeader, correlationId);
       res.setHeader(this.options.requestIdHeader, requestId);
-      res.setHeader(this.options.tibicoTransactionId, tibicoTransactionId);
+      res.setHeader(this.options.tibcoTransactionId, tibcoTransactionId);
 
       // Attach to request object for backward compatibility
       req.correlationId = correlationId;
-      req.tibicoTransactionId = tibicoTransactionId;
+      req.tibcoTransactionId = tibcoTransactionId;
       req.requestId = requestId;
-      req.correlationContext = { correlationId, requestId, metadata };
 
+      req.correlationContext = { correlationId, requestId, metadata };
       // Create correlation context
       const context = {
         correlationId,
-        tibicoTransactionId,
+        tibcoTransactionId,
         requestId,
         metadata,
       };
@@ -104,6 +89,10 @@ class CorrelationMiddleware {
         next();
       });
     };
+  }
+
+  static getContext() {
+    return contextManager.getContext();
   }
 }
 

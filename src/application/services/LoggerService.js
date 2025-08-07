@@ -52,10 +52,6 @@ class LoggerService {
     }
   }
 
-  logEntry(entry) {
-    this.logger.logEntry(entry);
-  }
-
   async close() {
     return this.logger.close();
   }

@@ -1,8 +1,5 @@
 const { container } = require('./SimpleContainer.js');
 
-const {
-  ConfigurationProviderFactory,
-} = require('../infrastructure/factories/ConfigurationProviderFactory.js');
 const { WinstonLoggerFactory } = require('../infrastructure/factories/WinstonLoggerFactory.js');
 
 const { ConfigurationService } = require('../application/services/ConfigurationService.js');
@@ -13,25 +10,14 @@ class ContainerConfig {
     // Clear existing registrations
     container.clear();
 
-    container.registerFactory(
-      'ConfigurationProviderFactory',
-      () => {
-        return new ConfigurationProviderFactory();
-      },
-      true
-    );
-
-    // Create and register configuration provider
-    const configFactory = container.resolve('ConfigurationProviderFactory');
-    const configProvider = configFactory.create({
-      configProvider: defaultConfig.configProvider,
-      configPath: defaultConfig.configPath,
-      envPrefix: defaultConfig.envPrefix,
-    });
+    // Create simple configuration provider
+    const configProvider = {
+      getConfiguration: (name) => Promise.resolve(defaultConfig),
+      getConfigurationSync: (name) => defaultConfig
+    };
     container.registerInstance('IConfigurationProvider', configProvider);
 
     // Register default logger configuration
-    console.log('-------', defaultConfig);
     container.registerInstance('LoggerConfiguration', defaultConfig);
 
     // Register logger factory

@@ -1,0 +1,131 @@
+extends layout
+
+block content
+  .row
+    .col-12
+      h2 Application Logs
+      
+      // Search Form
+      form#searchForm.mb-4
+        .row
+          .col-md-8
+            .input-group
+              input#searchInput.form-control(
+                type="text"
+                placeholder="Enter correlation ID or transaction ID"
+                value=searchQuery || ""
+              )
+              button.btn.btn-primary(type="submit") Search
+          .col-md-4
+            .search-toggle
+              .btn-group(role="group")
+                input#correlationToggle.btn-check(
+                  type="radio"
+                  name="searchType"
+                  value="correlationId"
+                  checked=searchType === 'correlationId' || !searchType
+                )
+                label.btn.btn-outline-secondary(for="correlationToggle") Correlation ID
+                input#transactionToggle.btn-check(
+                  type="radio"
+                  name="searchType"
+                  value="tibicotransactionid"
+                  checked=searchType === 'tibicotransactionid'
+                )
+                label.btn.btn-outline-secondary(for="transactionToggle") Transaction ID
+      
+      // Results Summary
+      if searchQuery
+        .alert.alert-info
+          | Showing #{logs.length} result(s) for "#{searchQuery}" in #{searchType}
+      else
+        .alert.alert-secondary
+          | Showing latest #{logs.length} logs
+      
+      // Logs Table
+      .table-container
+        table.table.table-striped.table-hover.log-table
+          thead
+            tr
+              th Timestamp
+              th Level
+              th Message
+              th Correlation ID
+              th Transaction ID
+              th Metadata
+              th Payload
+          tbody
+            each log in logs
+              tr
+                td= new Date(log.timestamp).toLocaleString()
+                td
+                  span(class=`log-level-${log.level}`)= log.level.toUpperCase()
+                td= log.message
+                td
+                  if log.correlationId
+                    code= log.correlationId
+                  else
+                    span.text-muted N/A
+                td
+                  if log.tibicotransactionid
+                    code= log.tibicotransactionid
+                  else
+                    span.text-muted N/A
+                td
+                  if log.meta && Object.keys(log.meta).length > 0
+                    .json-viewer
+                      pre
+                        code.language-json= JSON.stringify(log.meta, null, 2)
+                  else
+                    span.text-muted No metadata
+                td
+                  if log.payload
+                    .json-viewer
+                      pre
+                        code.language-json= JSON.stringify(log.payload, null, 2)
+                  else
+                    span.text-muted No payload
+            
+            if logs.length === 0
+              tr
+                td.text-center.text-muted(colspan="7") No logs found
+      
+      // Pagination (if needed)
+      if totalPages > 1
+        nav.mt-4
+          ul.pagination.justify-content-center
+            if currentPage > 1
+              li.page-item
+                a.page-link(href=`/logs?page=${currentPage - 1}&search=${searchQuery || ''}&type=${searchType || ''}`) Previous
+            
+            - let startPage = Math.max(1, currentPage - 2)
+            - let endPage = Math.min(totalPages, currentPage + 2)
+            
+            each pageNum in Array.from({length: endPage - startPage + 1}, (_, i) => startPage + i)
+              li.page-item(class=pageNum === currentPage ? 'active' : '')
+                a.page-link(href=`/logs?page=${pageNum}&search=${searchQuery || ''}&type=${searchType || ''}`)= pageNum
+            
+            if currentPage < totalPages
+              li.page-item
+                a.page-link(href=`/logs?page=${currentPage + 1}&search=${searchQuery || ''}&type=${searchType || ''}`) Next
+
+  script.
+    // Auto-highlight JSON
+    document.addEventListener('DOMContentLoaded', function() {
+      Prism.highlightAll();
+    });
+    
+    // Handle form submission
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const searchInput = document.getElementById('searchInput').value;
+      const searchType = document.querySelector('input[name="searchType"]:checked').value;
+      
+      const url = new URL('/logs', window.location.origin);
+      if (searchInput.trim()) {
+        url.searchParams.set('search', searchInput.trim());
+        url.searchParams.set('type', searchType);
+      }
+      
+      window.location.href = url.toString();
+    });

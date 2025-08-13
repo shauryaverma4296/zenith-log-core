@@ -72,17 +72,13 @@ block content
                   else
                     span.text-muted N/A
                 td
-                  if log.meta && Object.keys(log.meta).length > 0
-                    .json-viewer
-                      pre
-                        code.language-json= JSON.stringify(log.meta, null, 2)
+                  if log.metadata && Object.keys(log.metadata).length > 0
+                    button.btn.btn-sm.btn-outline-primary(onclick=`showMetadata('${log._id}')`) View Metadata
                   else
                     span.text-muted No metadata
                 td
-                  if log.payload
-                    .json-viewer
-                      pre
-                        code.language-json= JSON.stringify(log.payload, null, 2)
+                  if log.metadata && (log.metadata.response || log.metadata.payload)
+                    button.btn.btn-sm.btn-outline-success(onclick=`showPayload('${log._id}')`) View Payload
                   else
                     span.text-muted No payload
             
@@ -109,7 +105,42 @@ block content
               li.page-item
                 a.page-link(href=`/logs?page=${currentPage + 1}&search=${searchQuery || ''}&type=${searchType || ''}`) Next
 
+  // Modal for JSON viewing
+  .modal.fade#jsonModal(tabindex="-1")
+    .modal-dialog.modal-xl
+      .modal-content
+        .modal-header
+          h5.modal-title JSON Viewer
+          button.btn-close(type="button" data-bs-dismiss="modal")
+        .modal-body
+          pre.json-viewer#jsonContent
+            code.language-json
+
   script.
+    // Store logs data for modal viewing
+    const logsData = !{JSON.stringify(logs)};
+    
+    function showMetadata(logId) {
+      const log = logsData.find(l => l._id === logId);
+      if (log && log.metadata) {
+        document.getElementById('jsonContent').querySelector('code').textContent = JSON.stringify(log.metadata, null, 2);
+        document.querySelector('#jsonModal .modal-title').textContent = 'Metadata Viewer';
+        new bootstrap.Modal(document.getElementById('jsonModal')).show();
+        Prism.highlightAll();
+      }
+    }
+    
+    function showPayload(logId) {
+      const log = logsData.find(l => l._id === logId);
+      if (log && log.metadata) {
+        const payload = log.metadata.response || log.metadata.payload || log.metadata;
+        document.getElementById('jsonContent').querySelector('code').textContent = JSON.stringify(payload, null, 2);
+        document.querySelector('#jsonModal .modal-title').textContent = 'Payload Viewer';
+        new bootstrap.Modal(document.getElementById('jsonModal')).show();
+        Prism.highlightAll();
+      }
+    }
+
     // Auto-highlight JSON
     document.addEventListener('DOMContentLoaded', function() {
       Prism.highlightAll();

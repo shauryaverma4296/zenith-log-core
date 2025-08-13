@@ -81,8 +81,7 @@ router.get('/', async (req, res) => {
     const transformedLogs = logs.map(log => ({
       ...log,
       correlationId: log.metadata?.correlationId || log.correlationId,
-      tibicotransactionid: log.metadata?.tibcoTransactionId || log.tibicotransactionid,
-      payload: log.metadata?.payload || log.payload
+      tibicotransactionid: log.metadata?.tibcoTransactionId || log.tibicotransactionid
     }));
 
     res.render('logs', {

@@ -57,9 +57,9 @@ router.get('/', async (req, res) => {
     
     if (search.trim()) {
       if (type === 'correlationId') {
-        searchQuery['meta.correlationId'] = { $regex: search, $options: 'i' };
+        searchQuery['metadata.correlationId'] = { $regex: search, $options: 'i' };
       } else if (type === 'tibicotransactionid') {
-        searchQuery['meta.tibicotransactionid'] = { $regex: search, $options: 'i' };
+        searchQuery['metadata.tibcoTransactionId'] = { $regex: search, $options: 'i' };
       }
     }
 
@@ -80,9 +80,9 @@ router.get('/', async (req, res) => {
     // Transform logs for display
     const transformedLogs = logs.map(log => ({
       ...log,
-      correlationId: log.meta?.correlationId || log.correlationId,
-      tibicotransactionid: log.meta?.tibicotransactionid || log.tibicotransactionid,
-      payload: log.meta?.payload || log.payload
+      correlationId: log.metadata?.correlationId || log.correlationId,
+      tibicotransactionid: log.metadata?.tibcoTransactionId || log.tibicotransactionid,
+      payload: log.metadata?.payload || log.payload
     }));
 
     res.render('logs', {
@@ -132,9 +132,9 @@ router.get('/api', async (req, res) => {
     
     if (search.trim()) {
       if (type === 'correlationId') {
-        searchQuery['meta.correlationId'] = { $regex: search, $options: 'i' };
+        searchQuery['metadata.correlationId'] = { $regex: search, $options: 'i' };
       } else if (type === 'tibicotransactionid') {
-        searchQuery['meta.tibicotransactionid'] = { $regex: search, $options: 'i' };
+        searchQuery['metadata.tibcoTransactionId'] = { $regex: search, $options: 'i' };
       }
     }
 

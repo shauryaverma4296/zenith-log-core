@@ -5,6 +5,7 @@ html(lang="en")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title= title || "Logger Dashboard"
     link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet")
+    link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet")
     link(href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet")
     style.
       .json-viewer {
@@ -37,7 +38,17 @@ html(lang="en")
   body
     nav.navbar.navbar-dark.bg-dark.mb-4
       .container
-        span.navbar-brand.mb-0.h1 Logger Dashboard
+        span.navbar-brand.mb-0.h1 
+          i.fas.fa-chart-line.me-2
+          | Logger Dashboard
+        div
+          if title && title.includes('Login')
+            // Show nothing on login page
+          else
+            form.d-inline(method="POST" action="/auth/logout")
+              button.btn.btn-outline-light.btn-sm(type="submit")
+                i.fas.fa-sign-out-alt.me-1
+                | Logout
     .container
       block content
     

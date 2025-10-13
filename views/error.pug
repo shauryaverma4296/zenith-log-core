@@ -1,0 +1,14 @@
+extends layout
+
+block content
+  .row.justify-content-center.mt-5
+    .col-md-6.text-center
+      .card.shadow-sm
+        .card-body.p-5
+          i.fas.fa-times-circle.text-danger.mb-4(style="font-size: 4rem;")
+          h1.display-4.mb-3 Error
+          h2.mb-4 Something went wrong
+          p.text-muted.mb-4= message || 'An unexpected error occurred. Please try again later.'
+          a.btn.btn-primary(href="/logs")
+            i.fas.fa-home.me-2
+            | Go to Dashboard

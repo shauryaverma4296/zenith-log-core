@@ -59,28 +59,17 @@ app.get('/health', (req, res) => {
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).render('logs', {
-    title: 'Page Not Found',
-    logs: [],
-    error: 'Page not found',
-    searchQuery: '',
-    searchType: 'correlationId',
-    currentPage: 1,
-    totalPages: 1
+  res.status(404).render('404', {
+    title: 'Page Not Found'
   });
 });
 
 // Error handler
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
-  res.status(500).render('logs', {
+  res.status(500).render('error', {
     title: 'Server Error',
-    logs: [],
-    error: 'Internal server error',
-    searchQuery: '',
-    searchType: 'correlationId',
-    currentPage: 1,
-    totalPages: 1
+    message: 'An unexpected error occurred. Please try again later.'
   });
 });
 

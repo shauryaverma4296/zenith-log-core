@@ -1,0 +1,14 @@
+extends layout
+
+block content
+  .row.justify-content-center.mt-5
+    .col-md-6.text-center
+      .card.shadow-sm
+        .card-body.p-5
+          i.fas.fa-exclamation-triangle.text-warning.mb-4(style="font-size: 4rem;")
+          h1.display-4.mb-3 404
+          h2.mb-4 Page Not Found
+          p.text-muted.mb-4 The page you're looking for doesn't exist or has been moved.
+          a.btn.btn-primary(href="/logs")
+            i.fas.fa-home.me-2
+            | Go to Dashboard

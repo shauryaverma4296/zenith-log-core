@@ -57,7 +57,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// 404 handler
+// 404 handler (no logging)
 app.use((req, res) => {
   // Check if client expects JSON
   if (req.xhr || req.headers.accept?.includes('application/json')) {
@@ -67,7 +67,7 @@ app.use((req, res) => {
     });
   }
   
-  // Render HTML page
+  // Render HTML page without logging
   res.status(404).render('404', {
     title: 'Page Not Found'
   });

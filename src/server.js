@@ -59,6 +59,15 @@ app.get('/health', (req, res) => {
 
 // 404 handler
 app.use((req, res) => {
+  // Check if client expects JSON
+  if (req.xhr || req.headers.accept?.includes('application/json')) {
+    return res.status(404).json({ 
+      error: 'Not Found',
+      message: 'The requested resource was not found'
+    });
+  }
+  
+  // Render HTML page
   res.status(404).render('404', {
     title: 'Page Not Found'
   });
@@ -67,6 +76,16 @@ app.use((req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
+  
+  // Check if client expects JSON
+  if (req.xhr || req.headers.accept?.includes('application/json')) {
+    return res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: 'An unexpected error occurred'
+    });
+  }
+  
+  // Render HTML page
   res.status(500).render('error', {
     title: 'Server Error',
     message: 'An unexpected error occurred. Please try again later.'

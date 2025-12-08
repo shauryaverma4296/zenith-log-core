@@ -60,6 +60,8 @@ router.get('/', async (req, res) => {
         searchQuery['metadata.correlationId'] = { $regex: search, $options: 'i' };
       } else if (type === 'tibicotransactionid') {
         searchQuery['metadata.tibcoTransactionId'] = { $regex: search, $options: 'i' };
+      } else if (type === 'unitName') {
+        searchQuery['metadata.payload.unitName'] = { $regex: search, $options: 'i' };
       }
     }
 
@@ -134,6 +136,8 @@ router.get('/api', async (req, res) => {
         searchQuery['metadata.correlationId'] = { $regex: search, $options: 'i' };
       } else if (type === 'tibicotransactionid') {
         searchQuery['metadata.tibcoTransactionId'] = { $regex: search, $options: 'i' };
+      } else if (type === 'unitName') {
+        searchQuery['metadata.payload.unitName'] = { $regex: search, $options: 'i' };
       }
     }
 

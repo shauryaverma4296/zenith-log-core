@@ -12,7 +12,7 @@ block content
             .input-group
               input#searchInput.form-control(
                 type="text"
-                placeholder="Enter correlation ID or transaction ID"
+                placeholder="Enter search term"
                 value=searchQuery || ""
               )
               button.btn.btn-primary(type="submit") Search
@@ -33,6 +33,13 @@ block content
                   checked=searchType === 'tibicotransactionid'
                 )
                 label.btn.btn-outline-secondary(for="transactionToggle") Transaction ID
+                input#unitNameToggle.btn-check(
+                  type="radio"
+                  name="searchType"
+                  value="unitName"
+                  checked=searchType === 'unitName'
+                )
+                label.btn.btn-outline-secondary(for="unitNameToggle") Unit Name
       
       // Results Summary
       if searchQuery

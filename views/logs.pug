@@ -41,13 +41,20 @@ block content
                 )
                 label.btn.btn-outline-secondary(for="unitNameToggle") Unit Name
       
+      // Loader
+      #searchLoader.text-center.py-4(style="display: none;")
+        .spinner-border.text-primary(role="status")
+          span.visually-hidden Loading...
+        p.mt-2.text-muted Searching logs...
+      
       // Results Summary
-      if searchQuery
-        .alert.alert-info
-          | Showing #{logs.length} result(s) for "#{searchQuery}" in #{searchType}
-      else
-        .alert.alert-secondary
-          | Showing latest #{logs.length} logs
+      #resultsContainer
+        if searchQuery
+          .alert.alert-info
+            | Showing #{logs.length} result(s) for "#{searchQuery}" in #{searchType}
+        else
+          .alert.alert-secondary
+            | Showing latest #{logs.length} logs
       
       // Logs Table
       .table-container
@@ -177,6 +184,11 @@ block content
         e.preventDefault();
         const searchInput = document.getElementById('searchInput').value;
         const searchType = document.querySelector('input[name="searchType"]:checked').value;
+        
+        // Show loader, hide results
+        document.getElementById('searchLoader').style.display = 'block';
+        document.getElementById('resultsContainer').style.display = 'none';
+        document.querySelector('.table-container').style.display = 'none';
         
         const url = new URL('/logs', window.location.origin);
         if (searchInput.trim()) {

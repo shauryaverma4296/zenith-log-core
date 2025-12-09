@@ -11,13 +11,24 @@ const COLLECTION_NAME = process.env.COLLECTION_NAME || 'logs';
 
 let db = null;
 
-// Initialize MongoDB connection
+// Initialize MongoDB connection with indexes
 async function initializeDatabase() {
   try {
-    const client = new MongoClient(MONGODB_URL);
+    const client = new MongoClient(MONGODB_URL, {
+      maxPoolSize: 10,
+      minPoolSize: 2
+    });
     await client.connect();
     db = client.db(DB_NAME);
-    console.log('Connected to MongoDB for logs viewing');
+    
+    // Create indexes for faster queries
+    const collection = db.collection(COLLECTION_NAME);
+    await collection.createIndex({ 'metadata.correlationId': 1 });
+    await collection.createIndex({ 'metadata.tibcoTransactionId': 1 });
+    await collection.createIndex({ 'metadata.payload.unitName': 1 });
+    await collection.createIndex({ timestamp: -1 });
+    
+    console.log('Connected to MongoDB with indexes created');
   } catch (error) {
     console.error('Failed to connect to MongoDB:', error);
   }

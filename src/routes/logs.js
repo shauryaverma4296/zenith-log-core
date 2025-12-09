@@ -25,7 +25,10 @@ async function initializeDatabase() {
     const collection = db.collection(COLLECTION_NAME);
     await collection.createIndex({ 'metadata.correlationId': 1 });
     await collection.createIndex({ 'metadata.tibcoTransactionId': 1 });
-    await collection.createIndex({ 'metadata.payload.unitName': 1 });
+    await collection.createIndex(
+      { 'metadata.payload.unitName': 1 },
+      { collation: { locale: 'en', strength: 2 } }
+    );
     await collection.createIndex({ timestamp: -1 });
     
     console.log('Connected to MongoDB with indexes created');
@@ -65,14 +68,19 @@ router.get('/', async (req, res) => {
 
     // Build search query
     let searchQuery = {};
+    let useCollation = false;
     
     if (search.trim()) {
+      // Escape special regex characters
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
       if (type === 'correlationId') {
-        searchQuery['metadata.correlationId'] = { $regex: search, $options: 'i' };
+        searchQuery['metadata.correlationId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
       } else if (type === 'tibicotransactionid') {
-        searchQuery['metadata.tibcoTransactionId'] = { $regex: search, $options: 'i' };
+        searchQuery['metadata.tibcoTransactionId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
       } else if (type === 'unitName') {
-        searchQuery['metadata.payload.unitName'] = { $regex: search, $options: 'i' };
+        searchQuery['metadata.payload.unitName'] = { $regex: `^${escapedSearch}`, $options: 'i' };
+        useCollation = true;
       }
     }
 
@@ -83,8 +91,13 @@ router.get('/', async (req, res) => {
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     // Fetch logs with pagination
-    const logs = await collection
-      .find(searchQuery)
+    let cursor = collection.find(searchQuery);
+    
+    if (useCollation) {
+      cursor = cursor.collation({ locale: 'en', strength: 2 });
+    }
+    
+    const logs = await cursor
       .sort({ timestamp: -1 })
       .skip(skip)
       .limit(itemsPerPage)
@@ -141,14 +154,19 @@ router.get('/api', async (req, res) => {
 
     // Build search query
     let searchQuery = {};
+    let useCollation = false;
     
     if (search.trim()) {
+      // Escape special regex characters
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
       if (type === 'correlationId') {
-        searchQuery['metadata.correlationId'] = { $regex: search, $options: 'i' };
+        searchQuery['metadata.correlationId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
       } else if (type === 'tibicotransactionid') {
-        searchQuery['metadata.tibcoTransactionId'] = { $regex: search, $options: 'i' };
+        searchQuery['metadata.tibcoTransactionId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
       } else if (type === 'unitName') {
-        searchQuery['metadata.payload.unitName'] = { $regex: search, $options: 'i' };
+        searchQuery['metadata.payload.unitName'] = { $regex: `^${escapedSearch}`, $options: 'i' };
+        useCollation = true;
       }
     }
 
@@ -159,8 +177,13 @@ router.get('/api', async (req, res) => {
     const totalPages = Math.ceil(totalCount / itemsPerPage);
 
     // Fetch logs with pagination
-    const logs = await collection
-      .find(searchQuery)
+    let cursor = collection.find(searchQuery);
+    
+    if (useCollation) {
+      cursor = cursor.collation({ locale: 'en', strength: 2 });
+    }
+    
+    const logs = await cursor
       .sort({ timestamp: -1 })
       .skip(skip)
       .limit(itemsPerPage)

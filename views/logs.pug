@@ -177,6 +177,11 @@ block content
       }
     });
     
+    // Check if we should show loader on page load (coming from search)
+    if (sessionStorage.getItem('showLoader') === 'true') {
+      sessionStorage.removeItem('showLoader');
+    }
+    
     // Handle form submission
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
@@ -190,6 +195,13 @@ block content
         document.getElementById('resultsContainer').style.display = 'none';
         document.querySelector('.table-container').style.display = 'none';
         
+        // Also hide pagination if present
+        const pagination = document.querySelector('nav.mt-4');
+        if (pagination) pagination.style.display = 'none';
+        
+        // Mark that we're loading
+        sessionStorage.setItem('showLoader', 'true');
+        
         const url = new URL('/logs', window.location.origin);
         if (searchInput.trim()) {
           url.searchParams.set('search', searchInput.trim());
@@ -199,3 +211,16 @@ block content
         window.location.href = url.toString();
       });
     }
+    
+    // Handle pagination clicks with loader
+    document.querySelectorAll('.pagination .page-link').forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('searchLoader').style.display = 'block';
+        document.getElementById('resultsContainer').style.display = 'none';
+        document.querySelector('.table-container').style.display = 'none';
+        const pagination = document.querySelector('nav.mt-4');
+        if (pagination) pagination.style.display = 'none';
+        window.location.href = this.href;
+      });
+    });

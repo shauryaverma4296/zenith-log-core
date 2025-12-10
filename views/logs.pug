@@ -1,280 +1,258 @@
 extends layout
 
 block content
-  .row
-    .col-12
-      // Page Header
-      .d-flex.justify-content-between.align-items-center.mb-4
-        div
-          h2.page-title
-            i.fas.fa-stream.me-2
-            | Application Logs
-          p.page-subtitle Monitor and search through your application logs
-        .stats-badge
-          i.fas.fa-database
-          span #{logs.length} logs displayed
+  .kibana-main
+    //- Sidebar
+    .kibana-sidebar
+      .sidebar-section
+        .sidebar-title Filters
+        .sidebar-item.active
+          i.fas.fa-stream
+          span All Logs
+        .sidebar-item
+          i.fas.fa-exclamation-circle
+          span Errors Only
+        .sidebar-item
+          i.fas.fa-exclamation-triangle
+          span Warnings
+        .sidebar-item
+          i.fas.fa-info-circle
+          span Info
       
-      // Search Section
-      .card-section.search-card
-        form#searchForm
-          .row.align-items-end.g-3
-            .col-lg-5
-              label.form-label.fw-semibold
-                i.fas.fa-search.me-2
-                | Search Logs
-              .input-group
-                input#searchInput.form-control(
-                  type="text"
-                  placeholder="Enter correlation ID, transaction ID, or unit name..."
-                  value=searchQuery || ""
-                )
-                button.btn.btn-primary(type="submit")
-                  i.fas.fa-search.me-1
-                  | Search
-            .col-lg-5
-              label.form-label.fw-semibold
-                i.fas.fa-filter.me-2
-                | Search By
-              .search-toggle
-                .btn-group.w-100(role="group")
-                  input#correlationToggle.btn-check(
-                    type="radio"
-                    name="searchType"
-                    value="correlationId"
-                    checked=searchType === 'correlationId' || !searchType
-                  )
-                  label.btn.btn-outline-secondary(for="correlationToggle")
-                    i.fas.fa-link.me-1
-                    | Correlation ID
-                  input#transactionToggle.btn-check(
-                    type="radio"
-                    name="searchType"
-                    value="tibcoTransactionId"
-                    checked=searchType === 'tibcoTransactionId'
-                  )
-                  label.btn.btn-outline-secondary(for="transactionToggle")
-                    i.fas.fa-exchange-alt.me-1
-                    | Transaction ID
-                  input#unitNameToggle.btn-check(
-                    type="radio"
-                    name="searchType"
-                    value="unitName"
-                    checked=searchType === 'unitName'
-                  )
-                  label.btn.btn-outline-secondary(for="unitNameToggle")
-                    i.fas.fa-cube.me-1
-                    | Unit Name
-            .col-lg-2
-              if searchQuery
-                a.btn.btn-reset.w-100(href="/logs")
-                  i.fas.fa-times
-                  | Clear Search
+      .sidebar-section
+        .sidebar-title Quick Stats
+        .field-row
+          .field-name Total Logs
+          .field-value= logs.length
+        .field-row
+          .field-name Current Page
+          .field-value= currentPage || 1
+        .field-row
+          .field-name Total Pages
+          .field-value= totalPages || 1
+    
+    //- Main Content
+    .kibana-content
+      //- Search Bar
+      form#searchForm
+        .search-bar
+          .search-input-wrapper
+            i.fas.fa-search.search-icon
+            input#searchInput.search-input(
+              type="text"
+              placeholder="Search by correlation ID, transaction ID, or unit name..."
+              value=searchQuery || ""
+            )
+          
+          .filter-pills
+            label.filter-pill(class=searchType === 'correlationId' || !searchType ? 'active' : '')
+              input(type="radio" name="searchType" value="correlationId" checked=searchType === 'correlationId' || !searchType style="display: none;")
+              i.fas.fa-link
+              span Correlation ID
+            label.filter-pill(class=searchType === 'tibcoTransactionId' ? 'active' : '')
+              input(type="radio" name="searchType" value="tibcoTransactionId" checked=searchType === 'tibcoTransactionId' style="display: none;")
+              i.fas.fa-exchange-alt
+              span Transaction ID
+            label.filter-pill(class=searchType === 'unitName' ? 'active' : '')
+              input(type="radio" name="searchType" value="unitName" checked=searchType === 'unitName' style="display: none;")
+              i.fas.fa-cube
+              span Unit Name
+          
+          button.btn-kibana(type="submit")
+            i.fas.fa-search.me-2
+            | Search
+          
+          if searchQuery
+            a.btn-kibana-secondary(href="/logs")
+              i.fas.fa-times.me-2
+              | Clear
       
-      // Loader
-      #searchLoader.text-center.py-5(style="display: none;")
-        .spinner-border.text-primary(role="status")
-          span.visually-hidden Loading...
-        p.mt-3.text-muted.fw-medium
-          i.fas.fa-search.me-2
-          | Searching logs...
+      //- Results Header
+      .results-header
+        .results-count
+          if searchQuery
+            span Found 
+            strong #{logs.length}
+            span  results for "#{searchQuery}"
+          else
+            span Showing 
+            strong #{logs.length}
+            span  log entries
+        .results-count
+          span Updated: 
+          strong= new Date().toLocaleTimeString()
       
-      // Results Summary
-      #resultsContainer.mb-3
-        if searchQuery
-          .alert.alert-info.d-flex.align-items-center
-            i.fas.fa-info-circle.me-3.fs-5
-            div
-              strong Found #{logs.length} result(s)
-              |  matching "#{searchQuery}" in 
-              strong #{searchType}
-        else
-          .alert.alert-secondary.d-flex.align-items-center
-            i.fas.fa-clock.me-3.fs-5
-            div Showing the latest 
-              strong #{logs.length}
-              |  log entries
+      //- Loading Overlay
+      #loadingOverlay.loading-overlay
+        .spinner
+        span.text-muted Searching logs...
       
-      // Logs Table
-      .table-container
-        table.table.table-hover.log-table.mb-0
+      //- Logs Table
+      if logs.length > 0
+        table.log-table
           thead
             tr
-              th
-                i.fas.fa-calendar-alt.me-1
-                | Timestamp
-              th
-                i.fas.fa-tag.me-1
-                | Level
-              th
-                i.fas.fa-comment.me-1
-                | Message
-              th
-                i.fas.fa-link.me-1
-                | Correlation ID
-              th
-                i.fas.fa-exchange-alt.me-1
-                | Transaction ID
-              th
-                i.fas.fa-code.me-1
-                | Metadata
-              th
-                i.fas.fa-file-code.me-1
-                | Payload
+              th(style="width: 30px;")
+              th Timestamp
+              th Level
+              th Message
+              th Correlation ID
+              th Transaction ID
           tbody
-            each log in logs
-              tr
+            each log, index in logs
+              tr.log-row(onclick=`toggleRow(${index})` data-index=index)
+                td.expand-icon
+                  i.fas.fa-chevron-right
+                td.log-timestamp
+                  div= new Date(log.timestamp).toLocaleString()
                 td
-                  .d-flex.flex-column
-                    span.fw-medium= new Date(log.timestamp).toLocaleDateString()
-                    small.text-muted= new Date(log.timestamp).toLocaleTimeString()
-                td
-                  span(class=`log-level-${log.level}`)= log.level.toUpperCase()
-                td
-                  span.text-truncate(style="max-width: 250px; display: inline-block;")= log.message
-                td
-                  if log.correlationId
-                    code.text-truncate(style="max-width: 120px; display: inline-block;")= log.correlationId
-                  else
-                    span.text-muted.fst-italic —
-                td
-                  if log.tibcoTransactionId
-                    code.text-truncate(style="max-width: 120px; display: inline-block;")= log.tibcoTransactionId
-                  else
-                    span.text-muted.fst-italic —
-                td
-                  if log.metadata && Object.keys(log.metadata).length > 0
-                    button.btn.btn-sm.btn-outline-primary(onclick=`showMetadata('${log._id}')`)
-                      i.fas.fa-eye.me-1
-                      | View
-                  else
-                    span.text-muted.fst-italic —
-                td
-                  if log.metadata && (log.metadata.response || log.metadata.payload)
-                    button.btn.btn-sm.btn-outline-success(onclick=`showPayload('${log._id}')`)
-                      i.fas.fa-eye.me-1
-                      | View
-                  else
-                    span.text-muted.fst-italic —
-            
-            if logs.length === 0
-              tr
-                td.text-center.py-5(colspan="7")
-                  .text-muted
-                    i.fas.fa-inbox.fs-1.mb-3.d-block(style="opacity: 0.3;")
-                    p.mb-0.fw-medium No logs found
-                    small Try adjusting your search criteria
+                  span.log-level(class=`log-level-${log.level}`)= log.level.toUpperCase()
+                td.log-message= log.message
+                td.log-id(title=log.correlationId || '')= log.correlationId || '—'
+                td.log-id(title=log.tibcoTransactionId || '')= log.tibcoTransactionId || '—'
+              
+              tr.log-details(data-detail-index=index)
+                td(colspan="6")
+                  .log-details-content
+                    .detail-tabs
+                      .detail-tab.active(onclick=`showTab(${index}, 'table')` data-tab="table") Table
+                      .detail-tab(onclick=`showTab(${index}, 'json')` data-tab="json") JSON
+                    
+                    .detail-panel(data-panel="table")
+                      .field-row
+                        .field-name Timestamp
+                        .field-value= new Date(log.timestamp).toISOString()
+                      .field-row
+                        .field-name Level
+                        .field-value= log.level
+                      .field-row
+                        .field-name Message
+                        .field-value= log.message
+                      .field-row
+                        .field-name Correlation ID
+                        .field-value= log.correlationId || '—'
+                      .field-row
+                        .field-name Transaction ID
+                        .field-value= log.tibcoTransactionId || '—'
+                      if log.metadata && log.metadata.payload && log.metadata.payload.unitName
+                        .field-row
+                          .field-name Unit Name
+                          .field-value= log.metadata.payload.unitName
+                      .field-row
+                        .field-name Event
+                        .field-value= log.event || '—'
+                    
+                    .detail-panel(data-panel="json" style="display: none;")
+                      pre.json-viewer
+                        code#json-#{index}
+      else
+        .empty-state
+          i.fas.fa-inbox
+          h3 No logs found
+          p Try adjusting your search criteria or check back later
       
-      // Pagination (if needed)
+      //- Pagination
       if totalPages > 1
-        nav.mt-4.card-section.py-3
-          .d-flex.justify-content-between.align-items-center
-            span.text-muted.small Page #{currentPage} of #{totalPages}
-            ul.pagination.mb-0
-              if currentPage > 1
-                li.page-item
-                  a.page-link(href=`/logs?page=${currentPage - 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
-                    i.fas.fa-chevron-left.me-1
-                    | Previous
-              
-              - let startPage = Math.max(1, currentPage - 2)
-              - let endPage = Math.min(totalPages, currentPage + 2)
-              
-              each pageNum in Array.from({length: endPage - startPage + 1}, (_, i) => startPage + i)
-                li.page-item(class=pageNum === currentPage ? 'active' : '')
-                  a.page-link(href=`/logs?page=${pageNum}&search=${searchQuery || ''}&type=${searchType || ''}`)= pageNum
-              
-              if currentPage < totalPages
-                li.page-item
-                  a.page-link(href=`/logs?page=${currentPage + 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
-                    | Next
-                    i.fas.fa-chevron-right.ms-1
+        .pagination-bar
+          .page-info Page #{currentPage} of #{totalPages}
+          .page-buttons
+            if currentPage > 1
+              a.page-btn(href=`/logs?page=${currentPage - 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
+                i.fas.fa-chevron-left
+            
+            - let startPage = Math.max(1, currentPage - 2)
+            - let endPage = Math.min(totalPages, currentPage + 2)
+            
+            each pageNum in Array.from({length: endPage - startPage + 1}, (_, i) => startPage + i)
+              a.page-btn(href=`/logs?page=${pageNum}&search=${searchQuery || ''}&type=${searchType || ''}` class=pageNum === currentPage ? 'active' : '')= pageNum
             
             if currentPage < totalPages
-              li.page-item
-                a.page-link(href=`/logs?page=${currentPage + 1}&search=${searchQuery || ''}&type=${searchType || ''}`) Next
-
-  // Modal for JSON viewing
-  .modal.fade#jsonModal(tabindex="-1")
-    .modal-dialog.modal-xl
-      .modal-content
-        .modal-header
-          h5.modal-title JSON Viewer
-          button.btn-close(type="button" data-bs-dismiss="modal")
-        .modal-body
-          pre.json-viewer#jsonContent
-            code.language-json
+              a.page-btn(href=`/logs?page=${currentPage + 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
+                i.fas.fa-chevron-right
 
   script.
-    // Store logs data for modal viewing (safely)
+    // Store logs data
     let logsData = [];
     try {
       logsData = !{JSON.stringify(logs || [])};
     } catch(e) {
-      console.error('Error parsing logs data:', e);
+      console.error('Error parsing logs:', e);
     }
     
-    function showMetadata(logId) {
-      try {
-        const log = logsData.find(l => l._id === logId);
-        if (log && log.metadata) {
-          document.getElementById('jsonContent').querySelector('code').textContent = JSON.stringify(log.metadata, null, 2);
-          document.querySelector('#jsonModal .modal-title').textContent = 'Metadata Viewer';
-          new bootstrap.Modal(document.getElementById('jsonModal')).show();
-          Prism.highlightAll();
+    // Syntax highlight JSON
+    function syntaxHighlight(json) {
+      if (typeof json !== 'string') {
+        json = JSON.stringify(json, null, 2);
+      }
+      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'json-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'json-key';
+          } else {
+            cls = 'json-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'json-null';
         }
-      } catch(e) {
-        console.error('Error showing metadata:', e);
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+    
+    // Toggle row expansion
+    function toggleRow(index) {
+      const row = document.querySelector(`.log-row[data-index="${index}"]`);
+      const details = document.querySelector(`.log-details[data-detail-index="${index}"]`);
+      
+      // Close other rows
+      document.querySelectorAll('.log-row.expanded').forEach(r => {
+        if (r !== row) r.classList.remove('expanded');
+      });
+      document.querySelectorAll('.log-details.show').forEach(d => {
+        if (d !== details) d.classList.remove('show');
+      });
+      
+      row.classList.toggle('expanded');
+      details.classList.toggle('show');
+      
+      // Populate JSON if not done
+      const jsonCode = document.getElementById('json-' + index);
+      if (jsonCode && !jsonCode.innerHTML) {
+        jsonCode.innerHTML = syntaxHighlight(logsData[index]);
       }
     }
     
-    function showPayload(logId) {
-      try {
-        const log = logsData.find(l => l._id === logId);
-        if (log && log.metadata) {
-          const payload = log.metadata.response || log.metadata.payload || log.metadata;
-          document.getElementById('jsonContent').querySelector('code').textContent = JSON.stringify(payload, null, 2);
-          document.querySelector('#jsonModal .modal-title').textContent = 'Payload Viewer';
-          new bootstrap.Modal(document.getElementById('jsonModal')).show();
-          Prism.highlightAll();
-        }
-      } catch(e) {
-        console.error('Error showing payload:', e);
-      }
+    // Tab switching
+    function showTab(index, tab) {
+      const details = document.querySelector(`.log-details[data-detail-index="${index}"]`);
+      details.querySelectorAll('.detail-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+      });
+      details.querySelectorAll('.detail-panel').forEach(p => {
+        p.style.display = p.dataset.panel === tab ? 'block' : 'none';
+      });
     }
-
-    // Auto-highlight JSON
-    document.addEventListener('DOMContentLoaded', function() {
-      try {
-        Prism.highlightAll();
-      } catch(e) {
-        console.error('Error highlighting code:', e);
-      }
+    
+    // Filter pills toggle
+    document.querySelectorAll('.filter-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+      });
     });
     
-    // Check if we should show loader on page load (coming from search)
-    if (sessionStorage.getItem('showLoader') === 'true') {
-      sessionStorage.removeItem('showLoader');
-    }
-    
-    // Handle form submission
+    // Form submission
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
       searchForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const searchInput = document.getElementById('searchInput').value;
-        const searchType = document.querySelector('input[name="searchType"]:checked').value;
+        const searchType = document.querySelector('.filter-pill.active input').value;
         
-        // Show loader, hide results
-        document.getElementById('searchLoader').style.display = 'block';
-        document.getElementById('resultsContainer').style.display = 'none';
-        document.querySelector('.table-container').style.display = 'none';
-        
-        // Also hide pagination if present
-        const pagination = document.querySelector('nav.mt-4');
-        if (pagination) pagination.style.display = 'none';
-        
-        // Mark that we're loading
-        sessionStorage.setItem('showLoader', 'true');
+        document.getElementById('loadingOverlay').classList.add('show');
         
         const url = new URL('/logs', window.location.origin);
         if (searchInput.trim()) {
@@ -285,16 +263,3 @@ block content
         window.location.href = url.toString();
       });
     }
-    
-    // Handle pagination clicks with loader
-    document.querySelectorAll('.pagination .page-link').forEach(function(link) {
-      link.addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('searchLoader').style.display = 'block';
-        document.getElementById('resultsContainer').style.display = 'none';
-        document.querySelector('.table-container').style.display = 'none';
-        const pagination = document.querySelector('nav.mt-4');
-        if (pagination) pagination.style.display = 'none';
-        window.location.href = this.href;
-      });
-    });

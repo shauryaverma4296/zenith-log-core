@@ -3,120 +3,191 @@ extends layout
 block content
   .row
     .col-12
-      h2 Application Logs
+      // Page Header
+      .d-flex.justify-content-between.align-items-center.mb-4
+        div
+          h2.page-title
+            i.fas.fa-stream.me-2
+            | Application Logs
+          p.page-subtitle Monitor and search through your application logs
+        .stats-badge
+          i.fas.fa-database
+          span #{logs.length} logs displayed
       
-      // Search Form
-      form#searchForm.mb-4
-        .row
-          .col-md-8
-            .input-group
-              input#searchInput.form-control(
-                type="text"
-                placeholder="Enter search term"
-                value=searchQuery || ""
-              )
-              button.btn.btn-primary(type="submit") Search
-            if searchQuery
-              a.btn.btn-outline-secondary.ms-2(href="/logs" title="Reset search")
-                i.bi.bi-x-lg
-          .col-md-4
-            .search-toggle
-              .btn-group(role="group")
-                input#correlationToggle.btn-check(
-                  type="radio"
-                  name="searchType"
-                  value="correlationId"
-                  checked=searchType === 'correlationId' || !searchType
+      // Search Section
+      .card-section.search-card
+        form#searchForm
+          .row.align-items-end.g-3
+            .col-lg-5
+              label.form-label.fw-semibold
+                i.fas.fa-search.me-2
+                | Search Logs
+              .input-group
+                input#searchInput.form-control(
+                  type="text"
+                  placeholder="Enter correlation ID, transaction ID, or unit name..."
+                  value=searchQuery || ""
                 )
-                label.btn.btn-outline-secondary(for="correlationToggle") Correlation ID
-                input#transactionToggle.btn-check(
-                  type="radio"
-                  name="searchType"
-                  value="tibicotransactionid"
-                  checked=searchType === 'tibicotransactionid'
-                )
-                label.btn.btn-outline-secondary(for="transactionToggle") Transaction ID
-                input#unitNameToggle.btn-check(
-                  type="radio"
-                  name="searchType"
-                  value="unitName"
-                  checked=searchType === 'unitName'
-                )
-                label.btn.btn-outline-secondary(for="unitNameToggle") Unit Name
+                button.btn.btn-primary(type="submit")
+                  i.fas.fa-search.me-1
+                  | Search
+            .col-lg-5
+              label.form-label.fw-semibold
+                i.fas.fa-filter.me-2
+                | Search By
+              .search-toggle
+                .btn-group.w-100(role="group")
+                  input#correlationToggle.btn-check(
+                    type="radio"
+                    name="searchType"
+                    value="correlationId"
+                    checked=searchType === 'correlationId' || !searchType
+                  )
+                  label.btn.btn-outline-secondary(for="correlationToggle")
+                    i.fas.fa-link.me-1
+                    | Correlation ID
+                  input#transactionToggle.btn-check(
+                    type="radio"
+                    name="searchType"
+                    value="tibicotransactionid"
+                    checked=searchType === 'tibicotransactionid'
+                  )
+                  label.btn.btn-outline-secondary(for="transactionToggle")
+                    i.fas.fa-exchange-alt.me-1
+                    | Transaction ID
+                  input#unitNameToggle.btn-check(
+                    type="radio"
+                    name="searchType"
+                    value="unitName"
+                    checked=searchType === 'unitName'
+                  )
+                  label.btn.btn-outline-secondary(for="unitNameToggle")
+                    i.fas.fa-cube.me-1
+                    | Unit Name
+            .col-lg-2
+              if searchQuery
+                a.btn.btn-reset.w-100(href="/logs")
+                  i.fas.fa-times
+                  | Clear Search
       
       // Loader
-      #searchLoader.text-center.py-4(style="display: none;")
+      #searchLoader.text-center.py-5(style="display: none;")
         .spinner-border.text-primary(role="status")
           span.visually-hidden Loading...
-        p.mt-2.text-muted Searching logs...
+        p.mt-3.text-muted.fw-medium
+          i.fas.fa-search.me-2
+          | Searching logs...
       
       // Results Summary
-      #resultsContainer
+      #resultsContainer.mb-3
         if searchQuery
-          .alert.alert-info
-            | Showing #{logs.length} result(s) for "#{searchQuery}" in #{searchType}
+          .alert.alert-info.d-flex.align-items-center
+            i.fas.fa-info-circle.me-3.fs-5
+            div
+              strong Found #{logs.length} result(s)
+              |  matching "#{searchQuery}" in 
+              strong #{searchType}
         else
-          .alert.alert-secondary
-            | Showing latest #{logs.length} logs
+          .alert.alert-secondary.d-flex.align-items-center
+            i.fas.fa-clock.me-3.fs-5
+            div Showing the latest 
+              strong #{logs.length}
+              |  log entries
       
       // Logs Table
       .table-container
-        table.table.table-striped.table-hover.log-table
+        table.table.table-hover.log-table.mb-0
           thead
             tr
-              th Timestamp
-              th Level
-              th Message
-              th Correlation ID
-              th Transaction ID
-              th Metadata
-              th Payload
+              th
+                i.fas.fa-calendar-alt.me-1
+                | Timestamp
+              th
+                i.fas.fa-tag.me-1
+                | Level
+              th
+                i.fas.fa-comment.me-1
+                | Message
+              th
+                i.fas.fa-link.me-1
+                | Correlation ID
+              th
+                i.fas.fa-exchange-alt.me-1
+                | Transaction ID
+              th
+                i.fas.fa-code.me-1
+                | Metadata
+              th
+                i.fas.fa-file-code.me-1
+                | Payload
           tbody
             each log in logs
               tr
-                td= new Date(log.timestamp).toLocaleString()
+                td
+                  .d-flex.flex-column
+                    span.fw-medium= new Date(log.timestamp).toLocaleDateString()
+                    small.text-muted= new Date(log.timestamp).toLocaleTimeString()
                 td
                   span(class=`log-level-${log.level}`)= log.level.toUpperCase()
-                td= log.message
+                td
+                  span.text-truncate(style="max-width: 250px; display: inline-block;")= log.message
                 td
                   if log.correlationId
-                    code= log.correlationId
+                    code.text-truncate(style="max-width: 120px; display: inline-block;")= log.correlationId
                   else
-                    span.text-muted N/A
+                    span.text-muted.fst-italic —
                 td
                   if log.tibicotransactionid
-                    code= log.tibicotransactionid
+                    code.text-truncate(style="max-width: 120px; display: inline-block;")= log.tibicotransactionid
                   else
-                    span.text-muted N/A
+                    span.text-muted.fst-italic —
                 td
                   if log.metadata && Object.keys(log.metadata).length > 0
-                    button.btn.btn-sm.btn-outline-primary(onclick=`showMetadata('${log._id}')`) View Metadata
+                    button.btn.btn-sm.btn-outline-primary(onclick=`showMetadata('${log._id}')`)
+                      i.fas.fa-eye.me-1
+                      | View
                   else
-                    span.text-muted No metadata
+                    span.text-muted.fst-italic —
                 td
                   if log.metadata && (log.metadata.response || log.metadata.payload)
-                    button.btn.btn-sm.btn-outline-success(onclick=`showPayload('${log._id}')`) View Payload
+                    button.btn.btn-sm.btn-outline-success(onclick=`showPayload('${log._id}')`)
+                      i.fas.fa-eye.me-1
+                      | View
                   else
-                    span.text-muted No payload
+                    span.text-muted.fst-italic —
             
             if logs.length === 0
               tr
-                td.text-center.text-muted(colspan="7") No logs found
+                td.text-center.py-5(colspan="7")
+                  .text-muted
+                    i.fas.fa-inbox.fs-1.mb-3.d-block(style="opacity: 0.3;")
+                    p.mb-0.fw-medium No logs found
+                    small Try adjusting your search criteria
       
       // Pagination (if needed)
       if totalPages > 1
-        nav.mt-4
-          ul.pagination.justify-content-center
-            if currentPage > 1
-              li.page-item
-                a.page-link(href=`/logs?page=${currentPage - 1}&search=${searchQuery || ''}&type=${searchType || ''}`) Previous
-            
-            - let startPage = Math.max(1, currentPage - 2)
-            - let endPage = Math.min(totalPages, currentPage + 2)
-            
-            each pageNum in Array.from({length: endPage - startPage + 1}, (_, i) => startPage + i)
-              li.page-item(class=pageNum === currentPage ? 'active' : '')
-                a.page-link(href=`/logs?page=${pageNum}&search=${searchQuery || ''}&type=${searchType || ''}`)= pageNum
+        nav.mt-4.card-section.py-3
+          .d-flex.justify-content-between.align-items-center
+            span.text-muted.small Page #{currentPage} of #{totalPages}
+            ul.pagination.mb-0
+              if currentPage > 1
+                li.page-item
+                  a.page-link(href=`/logs?page=${currentPage - 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
+                    i.fas.fa-chevron-left.me-1
+                    | Previous
+              
+              - let startPage = Math.max(1, currentPage - 2)
+              - let endPage = Math.min(totalPages, currentPage + 2)
+              
+              each pageNum in Array.from({length: endPage - startPage + 1}, (_, i) => startPage + i)
+                li.page-item(class=pageNum === currentPage ? 'active' : '')
+                  a.page-link(href=`/logs?page=${pageNum}&search=${searchQuery || ''}&type=${searchType || ''}`)= pageNum
+              
+              if currentPage < totalPages
+                li.page-item
+                  a.page-link(href=`/logs?page=${currentPage + 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
+                    | Next
+                    i.fas.fa-chevron-right.ms-1
             
             if currentPage < totalPages
               li.page-item

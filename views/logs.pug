@@ -13,12 +13,12 @@ block content
               input#searchInput.form-control(
                 type="text"
                 placeholder="Enter search term"
-              value=searchQuery || ""
+                value=searchQuery || ""
               )
               button.btn.btn-primary(type="submit") Search
-              if searchQuery
-                a.btn.btn-outline-secondary(href="/logs" title="Reset search")
-                  i.bi.bi-x-lg
+            if searchQuery
+              a.btn.btn-outline-secondary.ms-2(href="/logs" title="Reset search")
+                i.bi.bi-x-lg
           .col-md-4
             .search-toggle
               .btn-group(role="group")

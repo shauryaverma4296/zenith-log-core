@@ -126,6 +126,9 @@ block content
                         .field-name Level
                         .field-value= log.level
                       .field-row
+                        .field-name Event
+                        .field-value= log.event
+                      .field-row
                         .field-name Message
                         .field-value= log.message
                       .field-row
@@ -144,7 +147,7 @@ block content
                     
                     .detail-panel(data-panel="json" style="display: none;")
                       pre.json-viewer
-                        code#json-#{index}
+                        code#json-#{`${index}`}
       else
         .empty-state
           i.fas.fa-inbox

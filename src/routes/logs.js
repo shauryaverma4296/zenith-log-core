@@ -16,11 +16,11 @@ async function initializeDatabase() {
   try {
     const client = new MongoClient(MONGODB_URL, {
       maxPoolSize: 10,
-      minPoolSize: 2
+      minPoolSize: 2,
     });
     await client.connect();
     db = client.db(DB_NAME);
-    
+
     // Create indexes for faster queries
     const collection = db.collection(COLLECTION_NAME);
     await collection.createIndex({ 'metadata.correlationId': 1 });
@@ -30,7 +30,7 @@ async function initializeDatabase() {
       { collation: { locale: 'en', strength: 2 } }
     );
     await collection.createIndex({ timestamp: -1 });
-    
+
     console.log('Connected to MongoDB with indexes created');
   } catch (error) {
     console.error('Failed to connect to MongoDB:', error);
@@ -51,16 +51,11 @@ router.get('/', async (req, res) => {
         searchQuery: '',
         searchType: 'correlationId',
         currentPage: 1,
-        totalPages: 1
+        totalPages: 1,
       });
     }
 
-    const {
-      search = '',
-      type = 'correlationId',
-      page = '1',
-      limit = '50'
-    } = req.query;
+    const { search = '', type = 'correlationId', page = '1', limit = '50' } = req.query;
 
     const currentPage = parseInt(page);
     const itemsPerPage = parseInt(limit);
@@ -69,14 +64,14 @@ router.get('/', async (req, res) => {
     // Build search query
     let searchQuery = {};
     let useCollation = false;
-    
+
     if (search.trim()) {
       // Escape special regex characters
       const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
+
       if (type === 'correlationId') {
         searchQuery['metadata.correlationId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
-      } else if (type === 'tibicotransactionid') {
+      } else if (type === 'tibcotransactionid') {
         searchQuery['metadata.tibcoTransactionId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
       } else if (type === 'unitName') {
         searchQuery['metadata.payload.unitName'] = { $regex: `^${escapedSearch}`, $options: 'i' };
@@ -92,22 +87,18 @@ router.get('/', async (req, res) => {
 
     // Fetch logs with pagination
     let cursor = collection.find(searchQuery);
-    
+
     if (useCollation) {
       cursor = cursor.collation({ locale: 'en', strength: 2 });
     }
-    
-    const logs = await cursor
-      .sort({ timestamp: -1 })
-      .skip(skip)
-      .limit(itemsPerPage)
-      .toArray();
+
+    const logs = await cursor.sort({ timestamp: -1 }).skip(skip).limit(itemsPerPage).toArray();
 
     // Transform logs for display
     const transformedLogs = logs.map(log => ({
       ...log,
       correlationId: log.metadata?.correlationId || log.correlationId,
-      tibicotransactionid: log.metadata?.tibcoTransactionId || log.tibicotransactionid
+      tibcotransactionid: log.metadata?.tibcoTransactionId || log.tibcotransactionid,
     }));
 
     res.render('logs', {
@@ -117,9 +108,8 @@ router.get('/', async (req, res) => {
       searchType: type,
       currentPage,
       totalPages,
-      totalCount
+      totalCount,
     });
-
   } catch (error) {
     console.error('Error fetching logs:', error);
     res.status(500).render('logs', {
@@ -129,7 +119,7 @@ router.get('/', async (req, res) => {
       searchQuery: req.query.search || '',
       searchType: req.query.type || 'correlationId',
       currentPage: 1,
-      totalPages: 1
+      totalPages: 1,
     });
   }
 });
@@ -141,12 +131,7 @@ router.get('/api', async (req, res) => {
       return res.status(500).json({ error: 'Database connection not available' });
     }
 
-    const {
-      search = '',
-      type = 'correlationId',
-      page = '1',
-      limit = '50'
-    } = req.query;
+    const { search = '', type = 'correlationId', page = '1', limit = '50' } = req.query;
 
     const currentPage = parseInt(page);
     const itemsPerPage = parseInt(limit);
@@ -155,14 +140,14 @@ router.get('/api', async (req, res) => {
     // Build search query
     let searchQuery = {};
     let useCollation = false;
-    
+
     if (search.trim()) {
       // Escape special regex characters
       const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
+
       if (type === 'correlationId') {
         searchQuery['metadata.correlationId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
-      } else if (type === 'tibicotransactionid') {
+      } else if (type === 'tibcotransactionid') {
         searchQuery['metadata.tibcoTransactionId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
       } else if (type === 'unitName') {
         searchQuery['metadata.payload.unitName'] = { $regex: `^${escapedSearch}`, $options: 'i' };
@@ -178,16 +163,12 @@ router.get('/api', async (req, res) => {
 
     // Fetch logs with pagination
     let cursor = collection.find(searchQuery);
-    
+
     if (useCollation) {
       cursor = cursor.collation({ locale: 'en', strength: 2 });
     }
-    
-    const logs = await cursor
-      .sort({ timestamp: -1 })
-      .skip(skip)
-      .limit(itemsPerPage)
-      .toArray();
+
+    const logs = await cursor.sort({ timestamp: -1 }).skip(skip).limit(itemsPerPage).toArray();
 
     res.json({
       logs,
@@ -195,14 +176,13 @@ router.get('/api', async (req, res) => {
         currentPage,
         totalPages,
         totalCount,
-        itemsPerPage
+        itemsPerPage,
       },
       search: {
         query: search,
-        type
-      }
+        type,
+      },
     });
-
   } catch (error) {
     console.error('Error fetching logs via API:', error);
     res.status(500).json({ error: 'Failed to fetch logs' });

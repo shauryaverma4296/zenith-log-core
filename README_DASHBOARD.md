@@ -34,6 +34,7 @@ node src/server.js
 ### 3. Access the Dashboard
 
 Open your browser and navigate to:
+
 - Main Dashboard: `http://localhost:3001`
 - Logs View: `http://localhost:3001/logs`
 - API Endpoint: `http://localhost:3001/logs/api`
@@ -43,6 +44,7 @@ Open your browser and navigate to:
 ### Viewing Logs
 
 The dashboard displays logs in a table with the following columns:
+
 - **Timestamp**: When the log was created
 - **Level**: Log level (ERROR, WARN, INFO, DEBUG)
 - **Message**: Log message
@@ -72,17 +74,20 @@ The search supports partial matches and is case-insensitive.
 Returns logs in JSON format with the same search and pagination features.
 
 **Query Parameters:**
+
 - `search`: Search term
-- `type`: Search type (`correlationId` or `tibicotransactionid`)
+- `type`: Search type (`correlationId` or `tibcotransactionid`)
 - `page`: Page number (default: 1)
 - `limit`: Items per page (default: 50)
 
 **Example:**
+
 ```bash
 curl "http://localhost:3001/logs/api?search=abc123&type=correlationId&page=1&limit=25"
 ```
 
 **Response:**
+
 ```json
 {
   "logs": [...],
@@ -111,7 +116,7 @@ The dashboard expects logs in this format:
   "message": "Request processed",
   "meta": {
     "correlationId": "req_abc123",
-    "tibicotransactionid": "txn_xyz789",
+    "tibcotransactionid": "txn_xyz789",
     "payload": {
       "userId": "user123",
       "action": "create_order"
@@ -133,15 +138,15 @@ const logger = initializeLogger({
   level: 'info',
   transports: [
     {
-      type: 'console'
+      type: 'console',
     },
     {
       type: 'mongodb',
       connectionString: 'mongodb://localhost:27017',
       database: 'winston_logs',
-      collection: 'logs'
-    }
-  ]
+      collection: 'logs',
+    },
+  ],
 });
 ```
 
@@ -172,11 +177,13 @@ src/
 ### Common Issues
 
 1. **MongoDB Connection Failed**
+
    - Check MONGODB_URL environment variable
    - Ensure MongoDB is running
    - Verify database and collection names
 
 2. **No Logs Displayed**
+
    - Confirm logs are being written to MongoDB
    - Check collection name matches COLLECTION_NAME
    - Verify log document structure
@@ -188,6 +195,7 @@ src/
 ### Debug Mode
 
 Enable debug logging by setting:
+
 ```bash
 DEBUG=winston-dashboard node src/server.js
 ```

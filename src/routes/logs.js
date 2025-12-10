@@ -71,7 +71,7 @@ router.get('/', async (req, res) => {
 
       if (type === 'correlationId') {
         searchQuery['metadata.correlationId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
-      } else if (type === 'tibcotransactionid') {
+      } else if (type === 'tibcoTransactionId') {
         searchQuery['metadata.tibcoTransactionId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
       } else if (type === 'unitName') {
         searchQuery['metadata.payload.unitName'] = { $regex: `^${escapedSearch}`, $options: 'i' };
@@ -98,7 +98,7 @@ router.get('/', async (req, res) => {
     const transformedLogs = logs.map(log => ({
       ...log,
       correlationId: log.metadata?.correlationId || log.correlationId,
-      tibcotransactionid: log.metadata?.tibcoTransactionId || log.tibcotransactionid,
+      tibcoTransactionId: log.metadata?.tibcoTransactionId || log.tibcoTransactionId,
     }));
 
     res.render('logs', {
@@ -147,7 +147,7 @@ router.get('/api', async (req, res) => {
 
       if (type === 'correlationId') {
         searchQuery['metadata.correlationId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
-      } else if (type === 'tibcotransactionid') {
+      } else if (type === 'tibcoTransactionId') {
         searchQuery['metadata.tibcoTransactionId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
       } else if (type === 'unitName') {
         searchQuery['metadata.payload.unitName'] = { $regex: `^${escapedSearch}`, $options: 'i' };

@@ -76,7 +76,7 @@ Returns logs in JSON format with the same search and pagination features.
 **Query Parameters:**
 
 - `search`: Search term
-- `type`: Search type (`correlationId` or `tibcotransactionid`)
+- `type`: Search type (`correlationId` or `tibcoTransactionId`)
 - `page`: Page number (default: 1)
 - `limit`: Items per page (default: 50)
 
@@ -116,7 +116,7 @@ The dashboard expects logs in this format:
   "message": "Request processed",
   "meta": {
     "correlationId": "req_abc123",
-    "tibcotransactionid": "txn_xyz789",
+    "tibcoTransactionId": "txn_xyz789",
     "payload": {
       "userId": "user123",
       "action": "create_order"

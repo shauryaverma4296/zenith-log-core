@@ -1,70 +1,77 @@
 extends layout
 
 block content
-  .row.justify-content-center
-    .col-md-6.col-lg-4
-      .card.shadow
-        .card-header.bg-dark.text-white.text-center
-          h4.mb-0 
-            i.fas.fa-sign-in-alt.me-2
-            | Login
-        .card-body.p-4
-          if error
-            .alert.alert-danger.alert-dismissible.fade.show(role="alert")
-              = error
-              button.btn-close(type="button" data-bs-dismiss="alert")
-          
-          form#loginForm(method="POST" action="/auth/login")
-            .mb-3
-              label.form-label(for="username") Username
-              input.form-control(
-                type="text"
-                id="username"
-                name="username"
-                required
-                placeholder="Enter your username"
-                autocomplete="username"
-              )
-            
-            .mb-3
-              label.form-label(for="password") Password
-              input.form-control(
-                type="password"
-                id="password"
-                name="password"
-                required
-                placeholder="Enter your password"
-                autocomplete="current-password"
-              )
-            
-            .mb-3.form-check
-              input.form-check-input(
-                type="checkbox"
-                id="rememberMe"
-                name="rememberMe"
-              )
-              label.form-check-label(for="rememberMe") Remember me
-            
-            .d-grid
-              button.btn.btn-primary.btn-lg(type="submit")
-                span.spinner-border.spinner-border-sm.me-2.d-none#loginSpinner(role="status")
-                | Sign In
+  .login-container
+    .login-card
+      .login-header
+        .login-logo
+          i.fas.fa-layer-group
+        h1.login-title Logger Dashboard
+        p.login-subtitle Secure access to your logs
+      
+      .login-body
+        if error
+          .login-alert
+            i.fas.fa-exclamation-circle
+            span= error
         
-        .card-footer.text-center.text-muted
-          small Secure Logger Dashboard Access
+        form#loginForm(method="POST" action="/auth/login")
+          .form-group
+            label.form-label
+              i.fas.fa-user
+              span Username
+            input.login-input(
+              type="text"
+              id="username"
+              name="username"
+              required
+              placeholder="Enter your username"
+              autocomplete="username"
+            )
+          
+          .form-group
+            label.form-label
+              i.fas.fa-lock
+              span Password
+            input.login-input(
+              type="password"
+              id="password"
+              name="password"
+              required
+              placeholder="Enter your password"
+              autocomplete="current-password"
+            )
+          
+          .form-group.remember-group
+            label.remember-checkbox
+              input(type="checkbox" id="rememberMe" name="rememberMe")
+              span.checkmark
+              span Remember me
+          
+          button.login-btn(type="submit")
+            span#loginText
+              i.fas.fa-sign-in-alt
+              | Sign In
+            span#loginSpinner.login-spinner(style="display: none;")
+              i.fas.fa-circle-notch.fa-spin
+              | Signing in...
+      
+      .login-footer
+        i.fas.fa-shield-alt
+        span Secure encrypted connection
 
   script.
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      const spinner = document.getElementById('loginSpinner');
+      const loginText = document.getElementById('loginText');
+      const loginSpinner = document.getElementById('loginSpinner');
       const submitBtn = e.target.querySelector('button[type="submit"]');
-      const originalText = submitBtn.innerHTML;
       
       // Show loading state
-      spinner.classList.remove('d-none');
+      loginText.style.display = 'none';
+      loginSpinner.style.display = 'flex';
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';
       
       try {
         const formData = new FormData(e.target);
@@ -89,33 +96,31 @@ block content
             sessionStorage.setItem('authToken', result.data);
           }
           
-          // Show success message briefly
-          submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Success!';
-          submitBtn.classList.add('btn-success');
+          // Show success
+          loginSpinner.innerHTML = '<i class="fas fa-check"></i> Success!';
+          submitBtn.classList.add('success');
           
-          // Redirect to logs page
           setTimeout(() => {
             window.location.href = '/logs';
-          }, 1000);
+          }, 800);
         } else {
           throw new Error(result.message || 'Login failed');
         }
       } catch (error) {
         // Show error
+        const existingAlert = document.querySelector('.login-alert');
+        if (existingAlert) existingAlert.remove();
+        
         const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-        alertDiv.innerHTML = `
-          ${error.message}
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
+        alertDiv.className = 'login-alert';
+        alertDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>' + error.message + '</span>';
         
         const form = document.getElementById('loginForm');
         form.insertBefore(alertDiv, form.firstChild);
         
         // Reset button
         submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
-        submitBtn.classList.remove('btn-success');
-        spinner.classList.add('d-none');
+        loginText.style.display = 'flex';
+        loginSpinner.style.display = 'none';
       }
     });

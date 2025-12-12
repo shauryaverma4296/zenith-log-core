@@ -87,91 +87,128 @@ block content
         .spinner
         span.text-muted Searching logs...
       
-      //- Logs Table
-      if logs.length > 0
-        table.log-table
-          thead
-            tr
-              th(style="width: 30px;")
-              th Timestamp
-              th Level
-              th Message
-              th Correlation ID
-              th Transaction ID
-          tbody
-            each log, index in logs
-              tr.log-row(onclick=`toggleRow(${index})` data-index=index)
-                td.expand-icon
-                  i.fas.fa-chevron-right
-                td.log-timestamp
-                  div= new Date(log.timestamp).toLocaleString()
-                td
-                  span.log-level(class=`log-level-${log.level}`)= log.level.toUpperCase()
-                td.log-message= log.message
-                td.log-id(title=log.correlationId || '')= log.correlationId || '—'
-                td.log-id(title=log.tibcoTransactionId || '')= log.tibcoTransactionId || '—'
-              
-              tr.log-details(data-detail-index=index)
-                td(colspan="6")
-                  .log-details-content
-                    .detail-tabs
-                      .detail-tab.active(onclick=`showTab(${index}, 'table')` data-tab="table") Table
-                      .detail-tab(onclick=`showTab(${index}, 'json')` data-tab="json") JSON
-                    
-                    .detail-panel(data-panel="table")
-                      .field-row
-                        .field-name Timestamp
-                        .field-value= new Date(log.timestamp).toISOString()
-                      .field-row
-                        .field-name Level
-                        .field-value= log.level
-                      .field-row
-                        .field-name Event
-                        .field-value= log.event
-                      .field-row
-                        .field-name Message
-                        .field-value= log.message
-                      .field-row
-                        .field-name Correlation ID
-                        .field-value= log.correlationId || '—'
-                      .field-row
-                        .field-name Transaction ID
-                        .field-value= log.tibcoTransactionId || '—'
-                      if log.metadata && log.metadata.payload && log.metadata.payload.unitName
+      //- Logs Table Container
+      .logs-table-container
+        if logs.length > 0
+          table.log-table
+            thead
+              tr
+                th(style="width: 30px;")
+                th Timestamp
+                th Level
+                th Message
+                th Correlation ID
+                th Transaction ID
+            tbody
+              each log, index in logs
+                tr.log-row(onclick=`toggleRow(${index})` data-index=index)
+                  td.expand-icon
+                    i.fas.fa-chevron-right
+                  td.log-timestamp
+                    div= new Date(log.timestamp).toLocaleString()
+                  td
+                    span.log-level(class=`log-level-${log.level}`)= log.level.toUpperCase()
+                  td.log-message= log.message
+                  td.log-id(title=log.correlationId || '')= log.correlationId || '—'
+                  td.log-id(title=log.tibcoTransactionId || '')= log.tibcoTransactionId || '—'
+                
+                tr.log-details(data-detail-index=index)
+                  td(colspan="6")
+                    .log-details-content
+                      .detail-tabs
+                        .detail-tab.active(onclick=`showTab(${index}, 'table')` data-tab="table") 
+                          i.fas.fa-table
+                          | Table
+                        .detail-tab(onclick=`showTab(${index}, 'metadata')` data-tab="metadata")
+                          i.fas.fa-database
+                          | Metadata
+                        .detail-tab(onclick=`showTab(${index}, 'payload')` data-tab="payload")
+                          i.fas.fa-file-code
+                          | Payload
+                        .detail-tab(onclick=`showTab(${index}, 'json')` data-tab="json")
+                          i.fas.fa-code
+                          | Full JSON
+                      
+                      .detail-panel(data-panel="table")
                         .field-row
-                          .field-name Unit Name
-                          .field-value= log.metadata.payload.unitName
-                      .field-row
-                        .field-name Event
-                        .field-value= log.event || '—'
-                    
-                    .detail-panel(data-panel="json" style="display: none;")
-                      pre.json-viewer
-                        code#json-#{`${index}`}
-      else
-        .empty-state
-          i.fas.fa-inbox
-          h3 No logs found
-          p Try adjusting your search criteria or check back later
+                          .field-name Timestamp
+                          .field-value= new Date(log.timestamp).toISOString()
+                        .field-row
+                          .field-name Level
+                          .field-value= log.level
+                        .field-row
+                          .field-name Event
+                          .field-value= log.event || '—'
+                        .field-row
+                          .field-name Message
+                          .field-value= log.message
+                        .field-row
+                          .field-name Correlation ID
+                          .field-value= log.correlationId || '—'
+                        .field-row
+                          .field-name Transaction ID
+                          .field-value= log.tibcoTransactionId || '—'
+                        if log.metadata && log.metadata.payload && log.metadata.payload.unitName
+                          .field-row
+                            .field-name Unit Name
+                            .field-value= log.metadata.payload.unitName
+                      
+                      .detail-panel(data-panel="metadata" style="display: none;")
+                        .json-panel-header
+                          span Metadata
+                          button.copy-btn(type="button" onclick=`copyJson(${index}, 'metadata')`)
+                            i.fas.fa-copy
+                            | Copy
+                        pre.json-viewer
+                          code(id=`metadata-${index}`)
+                      
+                      .detail-panel(data-panel="payload" style="display: none;")
+                        .json-panel-header
+                          span Payload
+                          button.copy-btn(type="button" onclick=`copyJson(${index}, 'payload')`)
+                            i.fas.fa-copy
+                            | Copy
+                        pre.json-viewer
+                          code(id=`payload-${index}`)
+                      
+                      .detail-panel(data-panel="json" style="display: none;")
+                        .json-panel-header
+                          span Full Log JSON
+                          button.copy-btn(type="button" onclick=`copyJson(${index}, 'full')`)
+                            i.fas.fa-copy
+                            | Copy
+                        pre.json-viewer
+                          code(id=`json-${index}`)
+        else
+          .empty-state
+            i.fas.fa-inbox
+            h3 No logs found
+            p Try adjusting your search criteria or check back later
       
-      //- Pagination
+      //- Fixed Pagination
       if totalPages > 1
-        .pagination-bar
-          .page-info Page #{currentPage} of #{totalPages}
-          .page-buttons
-            if currentPage > 1
-              a.page-btn(href=`/logs?page=${currentPage - 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
-                i.fas.fa-chevron-left
-            
-            - let startPage = Math.max(1, currentPage - 2)
-            - let endPage = Math.min(totalPages, currentPage + 2)
-            
-            each pageNum in Array.from({length: endPage - startPage + 1}, (_, i) => startPage + i)
-              a.page-btn(href=`/logs?page=${pageNum}&search=${searchQuery || ''}&type=${searchType || ''}` class=pageNum === currentPage ? 'active' : '')= pageNum
-            
-            if currentPage < totalPages
-              a.page-btn(href=`/logs?page=${currentPage + 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
-                i.fas.fa-chevron-right
+        .pagination-fixed
+          .pagination-bar
+            .page-info Page #{currentPage} of #{totalPages}
+            .page-buttons
+              if currentPage > 1
+                a.page-btn(href=`/logs?page=${currentPage - 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
+                  i.fas.fa-chevron-left
+              
+              - let startPage = Math.max(1, currentPage - 2)
+              - let endPage = Math.min(totalPages, currentPage + 2)
+              
+              each pageNum in Array.from({length: endPage - startPage + 1}, (_, i) => startPage + i)
+                a.page-btn(href=`/logs?page=${pageNum}&search=${searchQuery || ''}&type=${searchType || ''}` class=pageNum === currentPage ? 'active' : '')= pageNum
+              
+              if currentPage < totalPages
+                a.page-btn(href=`/logs?page=${currentPage + 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
+                  i.fas.fa-chevron-right
+
+  //- Toast notification
+  #copyToast.copy-toast
+    i.fas.fa-check-circle
+    span Copied to clipboard!
 
   script.
     // Store logs data
@@ -205,6 +242,33 @@ block content
       });
     }
     
+    // Copy JSON to clipboard
+    function copyJson(index, type) {
+      let data;
+      if (type === 'metadata') {
+        data = logsData[index].metadata || {};
+      } else if (type === 'payload') {
+        data = logsData[index].metadata?.payload || {};
+      } else {
+        data = logsData[index];
+      }
+      
+      navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => {
+        showToast();
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+      });
+    }
+    
+    // Show toast notification
+    function showToast() {
+      const toast = document.getElementById('copyToast');
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+    
     // Toggle row expansion
     function toggleRow(index) {
       const row = document.querySelector(`.log-row[data-index="${index}"]`);
@@ -221,10 +285,19 @@ block content
       row.classList.toggle('expanded');
       details.classList.toggle('show');
       
-      // Populate JSON if not done
+      // Populate JSON panels if not done
       const jsonCode = document.getElementById('json-' + index);
+      const metadataCode = document.getElementById('metadata-' + index);
+      const payloadCode = document.getElementById('payload-' + index);
+      
       if (jsonCode && !jsonCode.innerHTML) {
         jsonCode.innerHTML = syntaxHighlight(logsData[index]);
+      }
+      if (metadataCode && !metadataCode.innerHTML) {
+        metadataCode.innerHTML = syntaxHighlight(logsData[index].metadata || {});
+      }
+      if (payloadCode && !payloadCode.innerHTML) {
+        payloadCode.innerHTML = syntaxHighlight(logsData[index].metadata?.payload || {});
       }
     }
     

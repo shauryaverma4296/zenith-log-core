@@ -82,7 +82,7 @@ block content
           span Updated: 
           strong= new Date().toLocaleTimeString()
       
-      //- Loading Overlay
+      //- Loader
       #loadingOverlay.loading-overlay
         .spinner
         span.text-muted Searching logs...
@@ -95,6 +95,7 @@ block content
               th(style="width: 30px;")
               th Timestamp
               th Level
+              th Event
               th Message
               th Correlation ID
               th Transaction ID
@@ -107,6 +108,7 @@ block content
                   div= new Date(log.timestamp).toLocaleString()
                 td
                   span.log-level(class=`log-level-${log.level}`)= log.level.toUpperCase()
+                td.log-event= log.event
                 td.log-message= log.message
                 td.log-id(title=log.correlationId || '')= log.correlationId || '—'
                 td.log-id(title=log.tibcoTransactionId || '')= log.tibcoTransactionId || '—'
@@ -147,7 +149,7 @@ block content
                     
                     .detail-panel(data-panel="json" style="display: none;")
                       pre.json-viewer
-                        code#json-#{`${index}`}
+                        code(id=`json-${index}`)
       else
         .empty-state
           i.fas.fa-inbox

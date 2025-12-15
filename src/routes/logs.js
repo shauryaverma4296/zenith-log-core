@@ -55,7 +55,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const { search = '', type = 'correlationId', page = '1', limit = '50' } = req.query;
+  const { search = '', type = 'correlationId', page = '1', limit = '50', level = '' } = req.query;
 
     const currentPage = parseInt(page);
     const itemsPerPage = parseInt(limit);
@@ -64,6 +64,11 @@ router.get('/', async (req, res) => {
     // Build search query
     let searchQuery = {};
     let useCollation = false;
+
+    // Add level filter
+    if (level && level !== 'all') {
+      searchQuery.level = level;
+    }
 
     if (search.trim()) {
       // Escape special regex characters
@@ -106,6 +111,7 @@ router.get('/', async (req, res) => {
       logs: transformedLogs,
       searchQuery: search,
       searchType: type,
+      levelFilter: level,
       currentPage,
       totalPages,
       totalCount,

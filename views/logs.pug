@@ -6,18 +6,21 @@ block content
     .kibana-sidebar
       .sidebar-section
         .sidebar-title Filters
-        .sidebar-item.active
+        a.sidebar-item(href=`/logs?level=all&search=${searchQuery || ''}&type=${searchType || ''}` class=(!levelFilter || levelFilter === 'all') ? 'active' : '')
           i.fas.fa-stream
           span All Logs
-        .sidebar-item
+        a.sidebar-item(href=`/logs?level=error&search=${searchQuery || ''}&type=${searchType || ''}` class=levelFilter === 'error' ? 'active' : '')
           i.fas.fa-exclamation-circle
           span Errors Only
-        .sidebar-item
+        a.sidebar-item(href=`/logs?level=warn&search=${searchQuery || ''}&type=${searchType || ''}` class=levelFilter === 'warn' ? 'active' : '')
           i.fas.fa-exclamation-triangle
           span Warnings
-        .sidebar-item
+        a.sidebar-item(href=`/logs?level=info&search=${searchQuery || ''}&type=${searchType || ''}` class=levelFilter === 'info' ? 'active' : '')
           i.fas.fa-info-circle
           span Info
+        a.sidebar-item(href=`/logs?level=debug&search=${searchQuery || ''}&type=${searchType || ''}` class=levelFilter === 'debug' ? 'active' : '')
+          i.fas.fa-bug
+          span Debug
       
       .sidebar-section
         .sidebar-title Quick Stats
@@ -194,17 +197,17 @@ block content
             .page-info Page #{currentPage} of #{totalPages}
             .page-buttons
               if currentPage > 1
-                a.page-btn(href=`/logs?page=${currentPage - 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
+                a.page-btn(href=`/logs?page=${currentPage - 1}&search=${searchQuery || ''}&type=${searchType || ''}&level=${levelFilter || ''}`)
                   i.fas.fa-chevron-left
               
               - let startPage = Math.max(1, currentPage - 2)
               - let endPage = Math.min(totalPages, currentPage + 2)
               
               each pageNum in Array.from({length: endPage - startPage + 1}, (_, i) => startPage + i)
-                a.page-btn(href=`/logs?page=${pageNum}&search=${searchQuery || ''}&type=${searchType || ''}` class=pageNum === currentPage ? 'active' : '')= pageNum
+                a.page-btn(href=`/logs?page=${pageNum}&search=${searchQuery || ''}&type=${searchType || ''}&level=${levelFilter || ''}` class=pageNum === currentPage ? 'active' : '')= pageNum
               
               if currentPage < totalPages
-                a.page-btn(href=`/logs?page=${currentPage + 1}&search=${searchQuery || ''}&type=${searchType || ''}`)
+                a.page-btn(href=`/logs?page=${currentPage + 1}&search=${searchQuery || ''}&type=${searchType || ''}&level=${levelFilter || ''}`)
                   i.fas.fa-chevron-right
 
   //- Toast notification
@@ -336,6 +339,12 @@ block content
         if (searchInput.trim()) {
           url.searchParams.set('search', searchInput.trim());
           url.searchParams.set('type', searchType);
+        }
+        
+        // Preserve level filter
+        const currentLevel = new URLSearchParams(window.location.search).get('level');
+        if (currentLevel) {
+          url.searchParams.set('level', currentLevel);
         }
         
         window.location.href = url.toString();

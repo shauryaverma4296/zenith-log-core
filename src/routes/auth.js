@@ -73,14 +73,37 @@ router.post('/logout', (req, res) => {
   });
 });
 
-// Get token endpoint (proxy to existing endpoint)
+// Get token endpoint (API for React frontend)
 router.post('/get-token', async (req, res) => {
-  // This assumes there's already an implementation of /auth/get-token
-  // If not, you'll need to implement the actual authentication logic here
-  res.status(501).json({
-    message: "This endpoint should be implemented by your authentication service",
-    data: null
-  });
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({
+        message: 'Username and password are required',
+        token: null
+      });
+    }
+    
+    // For demo purposes, use mock auth. Replace with actual auth service.
+    if (username === 'admin' && password === 'password') {
+      return res.json({
+        message: 'Login successful',
+        token: 'demo-jwt-token-' + Date.now()
+      });
+    }
+    
+    return res.status(401).json({
+      message: 'Invalid credentials',
+      token: null
+    });
+  } catch (error) {
+    console.error('Auth error:', error);
+    res.status(500).json({
+      message: 'Authentication service unavailable',
+      token: null
+    });
+  }
 });
 
 module.exports = router;

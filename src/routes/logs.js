@@ -130,14 +130,28 @@ router.get('/', async (req, res) => {
   }
 });
 
-// API endpoint for JSON response
-router.get('/api', async (req, res) => {
+// API endpoint for JSON response (used by React frontend)
+router.get('/', async (req, res) => {
+  // Check if request wants JSON (API call from React)
+  const wantsJson = req.xhr || req.headers.accept?.includes('application/json') || req.headers.authorization;
+  
   try {
     if (!db) {
-      return res.status(500).json({ error: 'Database connection not available' });
+      if (wantsJson) {
+        return res.status(500).json({ error: 'Database connection not available' });
+      }
+      return res.status(500).render('logs', {
+        title: 'Logger Dashboard - Error',
+        logs: [],
+        error: 'Database connection not available',
+        searchQuery: '',
+        searchType: 'correlationId',
+        currentPage: 1,
+        totalPages: 1,
+      });
     }
 
-    const { search = '', type = 'correlationId', page = '1', limit = '50' } = req.query;
+    const { search = '', type = 'correlationId', page = '1', limit = '50', level = '' } = req.query;
 
     const currentPage = parseInt(page);
     const itemsPerPage = parseInt(limit);
@@ -146,6 +160,11 @@ router.get('/api', async (req, res) => {
     // Build search query
     let searchQuery = {};
     let useCollation = false;
+
+    // Add level filter
+    if (level && level !== 'all') {
+      searchQuery.level = level;
+    }
 
     if (search.trim()) {
       // Escape special regex characters
@@ -176,22 +195,48 @@ router.get('/api', async (req, res) => {
 
     const logs = await cursor.sort({ timestamp: -1 }).skip(skip).limit(itemsPerPage).toArray();
 
-    res.json({
-      logs,
-      pagination: {
+    // Transform logs for display
+    const transformedLogs = logs.map(log => ({
+      ...log,
+      correlationId: log.metadata?.correlationId || log.correlationId,
+      tibcoTransactionId: log.metadata?.tibcoTransactionId || log.tibcoTransactionId,
+    }));
+
+    // Return JSON for API requests
+    if (wantsJson) {
+      return res.json({
+        logs: transformedLogs,
         currentPage,
         totalPages,
         totalCount,
-        itemsPerPage,
-      },
-      search: {
-        query: search,
-        type,
-      },
+      });
+    }
+
+    // Render HTML for browser requests
+    res.render('logs', {
+      title: 'Logger Dashboard',
+      logs: transformedLogs,
+      searchQuery: search,
+      searchType: type,
+      levelFilter: level,
+      currentPage,
+      totalPages,
+      totalCount,
     });
   } catch (error) {
-    console.error('Error fetching logs via API:', error);
-    res.status(500).json({ error: 'Failed to fetch logs' });
+    console.error('Error fetching logs:', error);
+    if (wantsJson) {
+      return res.status(500).json({ error: 'Failed to fetch logs' });
+    }
+    res.status(500).render('logs', {
+      title: 'Logger Dashboard - Error',
+      logs: [],
+      error: 'Failed to fetch logs',
+      searchQuery: req.query.search || '',
+      searchType: req.query.type || 'correlationId',
+      currentPage: 1,
+      totalPages: 1,
+    });
   }
 });
 

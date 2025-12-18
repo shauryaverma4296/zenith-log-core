@@ -12,6 +12,22 @@ const PORT = process.env.PORT || 3001;
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, '../views'));
 
+// CORS middleware for React frontend
+app.use((req, res, next) => {
+  const allowedOrigins = ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000'];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // Session middleware
 app.use(session({
   secret: process.env.SESSION_SECRET || 'logger-dashboard-secret-key',
@@ -39,8 +55,21 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
+// API Authentication middleware (JWT-based for React frontend)
+const requireApiAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized', message: 'No token provided' });
+  }
+  // For demo purposes, accept any token. In production, verify JWT
+  req.apiToken = authHeader.substring(7);
+  next();
+};
+
 // Routes
 app.use('/auth', authRouter);
+app.use('/api/auth', authRouter); // API routes for React frontend
+app.use('/api/logs', requireApiAuth, logsRouter); // API routes for React frontend
 app.use('/logs', requireAuth, logsRouter);
 
 // Root route redirect to logs

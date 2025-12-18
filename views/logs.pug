@@ -83,7 +83,7 @@ block content
             span  log entries
         .results-count
           span Updated: 
-          strong= new Date().toLocaleTimeString()
+          strong#lastUpdated
       
       //- Loader
       #loadingOverlay.loading-overlay
@@ -108,8 +108,8 @@ block content
                 tr.log-row(onclick=`toggleRow(${index})` data-index=index)
                   td.expand-icon
                     i.fas.fa-chevron-right
-                  td.log-timestamp
-                    div= new Date(log.timestamp).toLocaleString()
+                  td.log-timestamp(data-timestamp=log.timestamp)
+                    div
                   td
                     span.log-level(class=`log-level-${log.level}`)= log.level.toUpperCase()
                   td.log-event= log.event
@@ -137,7 +137,7 @@ block content
                       .detail-panel(data-panel="table")
                         .field-row
                           .field-name Timestamp
-                          .field-value= new Date(log.timestamp).toISOString()
+                          .field-value.detail-timestamp(data-timestamp=log.timestamp)
                         .field-row
                           .field-name Level
                           .field-value= log.level
@@ -216,6 +216,51 @@ block content
     span Copied to clipboard!
 
   script.
+    // Format timestamp to local timezone
+    function formatToLocal(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+    }
+    
+    function formatToLocalFull(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        fractionalSecondDigits: 3,
+        hour12: false,
+        timeZoneName: 'short'
+      });
+    }
+    
+    // Convert all timestamps on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Update last updated time
+      document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+      
+      // Update table timestamps
+      document.querySelectorAll('.log-timestamp[data-timestamp]').forEach(el => {
+        el.querySelector('div').textContent = formatToLocal(el.dataset.timestamp);
+      });
+      
+      // Update detail panel timestamps
+      document.querySelectorAll('.detail-timestamp[data-timestamp]').forEach(el => {
+        el.textContent = formatToLocalFull(el.dataset.timestamp);
+      });
+    });
+    
     // Store logs data
     let logsData = [];
     try {

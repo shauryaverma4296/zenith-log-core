@@ -82,6 +82,10 @@ block content
             strong #{logs.length}
             span  log entries
         .results-count
+          span.timezone-indicator
+            i.fas.fa-clock
+            span#timezone
+          span.mx-2 |
           span Updated: 
           strong#lastUpdated
       
@@ -247,6 +251,10 @@ block content
     
     // Convert all timestamps on page load
     document.addEventListener('DOMContentLoaded', function() {
+      // Show timezone
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      document.getElementById('timezone').textContent = tz;
+      
       // Update last updated time
       document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
       

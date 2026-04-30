@@ -86,16 +86,26 @@ router.post('/get-token', async (req, res) => {
     }
     
     // For demo purposes, use mock auth. Replace with actual auth service.
+    // `access` tells the frontend which tabs the user can route to.
     if (username === 'admin' && password === 'password') {
       return res.json({
         message: 'Login successful',
-        token: 'demo-jwt-token-' + Date.now()
+        token: 'demo-jwt-token-' + Date.now(),
+        access: ['logs', 'contentful'],
       });
     }
-    
+    if (username === 'viewer' && password === 'password') {
+      return res.json({
+        message: 'Login successful',
+        token: 'demo-jwt-token-' + Date.now(),
+        access: ['logs'],
+      });
+    }
+
     return res.status(401).json({
       message: 'Invalid credentials',
-      token: null
+      token: null,
+      access: []
     });
   } catch (error) {
     console.error('Auth error:', error);

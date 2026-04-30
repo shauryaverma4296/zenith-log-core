@@ -3,6 +3,7 @@ const path = require('path');
 const session = require('express-session');
 const logsRouter = require('./routes/logs');
 const authRouter = require('./routes/auth');
+const contentfulRouter = require('./routes/contentful');
 
 // Initialize Express app
 const app = express();
@@ -70,6 +71,8 @@ const requireApiAuth = (req, res, next) => {
 app.use('/auth', authRouter);
 app.use('/api/auth', authRouter); // API routes for React frontend
 app.use('/api/logs', requireApiAuth, logsRouter); // API routes for React frontend
+app.use('/api/contentful', requireApiAuth, contentfulRouter); // Contentful export API
+app.use('/contentful', requireAuth, contentfulRouter); // Pug-side (optional)
 app.use('/logs', requireAuth, logsRouter);
 
 // Root route redirect to logs

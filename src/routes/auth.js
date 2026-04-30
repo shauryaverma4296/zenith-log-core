@@ -1,6 +1,21 @@
 const express = require('express');
 const router = express.Router();
 
+// Demo user directory: maps credentials to allowed tabs.
+// Replace with a real auth service in production.
+const USERS = {
+  admin:  { password: 'password', access: ['logs', 'contentful'] },
+  viewer: { password: 'password', access: ['logs'] },
+  editor: { password: 'password', access: ['contentful'] },
+};
+
+function authenticate(username, password) {
+  const u = USERS[username];
+  if (!u || u.password !== password) return null;
+  return { token: 'demo-jwt-token-' + Date.now(), access: u.access };
+}
+
+
 // Login page route
 router.get('/login', (req, res) => {
   // If already authenticated, redirect to logs

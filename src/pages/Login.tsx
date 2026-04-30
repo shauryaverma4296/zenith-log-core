@@ -32,8 +32,9 @@ export default function Login() {
       const data = await res.json();
 
       if (res.ok && data.token) {
-        login(data.token, remember);
-        navigate("/dashboard");
+        const access = Array.isArray(data.access) ? data.access : [];
+        login(data.token, access, remember);
+        navigate("/select");
       } else {
         toast({
           variant: "destructive",

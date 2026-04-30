@@ -6,7 +6,7 @@ const router = express.Router();
 const SUPPORTED_LOCALES = ['en', 'zh', 'ar', 'fr', 'de', 'ru', 'tr'];
 const SUPPORTED_FORMATS = ['csv', 'excel', 'json'];
 
-// Lazy Contentful client (one per locale to keep things simple)
+// Lazy Contentful client
 let _client = null;
 function getClient() {
   if (_client) return _client;
@@ -20,15 +20,15 @@ function getClient() {
   return _client;
 }
 
+// ---------- Helpers ----------
 function csvEscape(val) {
   if (val === null || val === undefined) return '';
   const s = typeof val === 'object' ? JSON.stringify(val) : String(val);
-  if (/[\",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 
 function flatten(items, locale) {
-  // Each row: { locale, id, ...fields }
   return items.map((item) => ({
     locale,
     id: item.sys?.id,
@@ -40,10 +40,7 @@ function flatten(items, locale) {
 function toCSV(rows) {
   if (!rows.length) return '';
   const headers = Array.from(
-    rows.reduce((set, r) => {
-      Object.keys(r).forEach((k) => set.add(k));
-      return set;
-    }, new Set())
+    rows.reduce((set, r) => { Object.keys(r).forEach((k) => set.add(k)); return set; }, new Set())
   );
   const lines = [headers.join(',')];
   for (const r of rows) {
@@ -52,8 +49,7 @@ function toCSV(rows) {
   return lines.join('\n');
 }
 
-// Minimal XLSX writer using a single-sheet CSV-as-XLSX would require a dep.
-// Use a tiny SpreadsheetML 2003 (.xls) XML format that Excel opens natively.
+// Excel-friendly XML (.xls) — opens natively in Excel without extra deps
 function toExcelXML(rows) {
   const headers = rows.length
     ? Array.from(rows.reduce((s, r) => { Object.keys(r).forEach(k => s.add(k)); return s; }, new Set()))
@@ -72,6 +68,19 @@ function toExcelXML(rows) {
 </Workbook>`;
 }
 
+// ---------- Routes ----------
+
+// Render the Contentful utility UI (Pug)
+router.get('/', (req, res) => {
+  res.render('contentful', {
+    title: 'Contentful Utility - Logger Dashboard',
+    locales: SUPPORTED_LOCALES,
+    formats: SUPPORTED_FORMATS
+  });
+});
+
+// Export endpoint — triggers a file download
+// Example: /contentful/export?content_type=keyValue&limit=1000&select=fields.key,fields.value&locale=en&export=csv
 router.get('/export', async (req, res) => {
   try {
     const {
@@ -89,7 +98,6 @@ router.get('/export', async (req, res) => {
       return res.status(400).json({ error: `Unsupported export format. Use one of: ${SUPPORTED_FORMATS.join(', ')}` });
     }
 
-    // Resolve locale list
     let locales;
     if (locale === 'ALL' || locale === 'all') {
       locales = SUPPORTED_LOCALES;
@@ -126,19 +134,15 @@ router.get('/export', async (req, res) => {
       res.setHeader('Content-Disposition', `attachment; filename="${baseName}.json"`);
       return res.send(JSON.stringify({ locales, total: allRows.length, data: perLocale }, null, 2));
     }
-
     if (exportFormat === 'csv') {
-      const csv = toCSV(allRows);
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${baseName}.csv"`);
-      return res.send(csv);
+      return res.send(toCSV(allRows));
     }
-
     if (exportFormat === 'excel') {
-      const xml = toExcelXML(allRows);
       res.setHeader('Content-Type', 'application/vnd.ms-excel');
       res.setHeader('Content-Disposition', `attachment; filename="${baseName}.xls"`);
-      return res.send(xml);
+      return res.send(toExcelXML(allRows));
     }
   } catch (err) {
     console.error('Contentful export error:', err);

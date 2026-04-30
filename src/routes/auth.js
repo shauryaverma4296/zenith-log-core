@@ -15,60 +15,45 @@ function authenticate(username, password) {
   return { token: 'demo-jwt-token-' + Date.now(), access: u.access };
 }
 
-
-// Login page route
+// Login page
 router.get('/login', (req, res) => {
-  // If already authenticated, redirect to logs
-  const token = req.session?.authToken;
-  if (token) {
-    return res.redirect('/logs');
+  if (req.session?.authToken) {
+    return res.redirect('/select');
   }
-  
   res.render('login', {
     title: 'Login - Logger Dashboard',
     error: req.query.error || null
   });
 });
 
-// Login form submission
+// Login submission
 router.post('/login', async (req, res) => {
   try {
     const { username, password, rememberMe } = req.body;
-    
+
     if (!username || !password) {
       return res.render('login', {
         title: 'Login - Logger Dashboard',
         error: 'Username and password are required'
       });
     }
-    
-    // For demo purposes, simulate the auth API call
-    // Replace this with actual call to your auth service
-    const mockAuthResponse = {
-      ok: username === 'admin' && password === 'password', // Demo credentials
-      data: username === 'admin' && password === 'password' ? 'mock-jwt-token-12345' : null,
-      message: username === 'admin' && password === 'password' ? 'Success' : 'Invalid credentials'
-    };
-    
-    if (mockAuthResponse.ok && mockAuthResponse.data) {
-      // Store token in session
-      req.session.authToken = mockAuthResponse.data;
+
+    const result = authenticate(username, password);
+
+    if (result) {
+      req.session.authToken = result.token;
       req.session.username = username;
-      
-      // Set cookie expiry based on remember me
-      if (rememberMe) {
-        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-      } else {
-        req.session.cookie.maxAge = 24 * 60 * 60 * 1000; // 24 hours
-      }
-      
-      res.redirect('/logs');
-    } else {
-      res.render('login', {
-        title: 'Login - Logger Dashboard',
-        error: mockAuthResponse.message || 'Invalid credentials'
-      });
+      req.session.access = result.access;
+      req.session.cookie.maxAge = rememberMe
+        ? 30 * 24 * 60 * 60 * 1000
+        : 24 * 60 * 60 * 1000;
+      return res.redirect('/select');
     }
+
+    return res.render('login', {
+      title: 'Login - Logger Dashboard',
+      error: 'Invalid credentials'
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.render('login', {
@@ -78,56 +63,29 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Logout route
+// Logout
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {
-    if (err) {
-      console.error('Logout error:', err);
-    }
+    if (err) console.error('Logout error:', err);
     res.redirect('/auth/login');
   });
 });
 
-// Get token endpoint (API for React frontend)
+// JSON token endpoint (for programmatic clients only)
 router.post('/get-token', async (req, res) => {
   try {
     const { username, password } = req.body;
-    
     if (!username || !password) {
-      return res.status(400).json({
-        message: 'Username and password are required',
-        token: null
-      });
+      return res.status(400).json({ message: 'Username and password are required', token: null, access: [] });
     }
-    
-    // For demo purposes, use mock auth. Replace with actual auth service.
-    // `access` tells the frontend which tabs the user can route to.
-    if (username === 'admin' && password === 'password') {
-      return res.json({
-        message: 'Login successful',
-        token: 'demo-jwt-token-' + Date.now(),
-        access: ['logs', 'contentful'],
-      });
+    const result = authenticate(username, password);
+    if (!result) {
+      return res.status(401).json({ message: 'Invalid credentials', token: null, access: [] });
     }
-    if (username === 'viewer' && password === 'password') {
-      return res.json({
-        message: 'Login successful',
-        token: 'demo-jwt-token-' + Date.now(),
-        access: ['logs'],
-      });
-    }
-
-    return res.status(401).json({
-      message: 'Invalid credentials',
-      token: null,
-      access: []
-    });
+    return res.json({ message: 'Login successful', ...result });
   } catch (error) {
     console.error('Auth error:', error);
-    res.status(500).json({
-      message: 'Authentication service unavailable',
-      token: null
-    });
+    res.status(500).json({ message: 'Authentication service unavailable', token: null, access: [] });
   }
 });
 

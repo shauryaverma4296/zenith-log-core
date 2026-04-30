@@ -1,0 +1,247 @@
+extends layout
+
+block content
+  style.
+    .cf-header {
+      background: var(--kibana-header);
+      border-bottom: 1px solid var(--kibana-border);
+      padding: 0 16px; height: 48px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cf-header .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+    .cf-header .brand i { color: var(--kibana-accent); }
+    .cf-header .actions { display: flex; align-items: center; gap: 8px; }
+    .cf-back, .cf-logout {
+      background: transparent; border: 1px solid var(--kibana-border);
+      color: var(--kibana-text); padding: 6px 12px; border-radius: 6px;
+      cursor: pointer; font-size: 12px; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .cf-back:hover, .cf-logout:hover { border-color: var(--kibana-accent); color: var(--kibana-accent); }
+    .cf-wrap { max-width: 820px; margin: 0 auto; padding: 40px 24px; }
+    .cf-title { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+    .cf-sub { color: var(--kibana-text-muted); margin: 0 0 28px; font-size: 13px; }
+    .cf-card {
+      background: var(--kibana-sidebar);
+      border: 1px solid var(--kibana-border);
+      border-radius: 10px; padding: 24px;
+    }
+    .cf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+    .cf-row.single { grid-template-columns: 1fr; }
+    .cf-label {
+      display: block; font-size: 12px; font-weight: 600;
+      color: var(--kibana-text); margin-bottom: 6px;
+    }
+    .cf-input, .cf-select {
+      width: 100%; background: var(--kibana-bg);
+      border: 1px solid var(--kibana-border); border-radius: 6px;
+      padding: 8px 12px; color: var(--kibana-text);
+      font-size: 13px; outline: none; transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .cf-input:focus, .cf-select:focus { border-color: var(--kibana-accent); }
+    .cf-locales-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .cf-toggle-all {
+      background: none; border: none; color: var(--kibana-accent);
+      font-size: 11px; cursor: pointer; padding: 0;
+    }
+    .cf-toggle-all:hover { text-decoration: underline; }
+    .cf-locales {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+    }
+    .cf-locale {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 6px;
+      border: 1px solid var(--kibana-border);
+      background: var(--kibana-bg);
+      cursor: pointer; font-size: 12px;
+      text-transform: uppercase; user-select: none;
+      transition: all 0.15s;
+    }
+    .cf-locale:hover { border-color: var(--kibana-text-muted); }
+    .cf-locale.checked {
+      border-color: var(--kibana-accent);
+      background: rgba(54,162,239,0.12);
+      color: var(--kibana-accent);
+    }
+    .cf-locale input { margin: 0; }
+    .cf-actions { display: flex; align-items: end; gap: 12px; }
+    .cf-export-btn {
+      background: var(--kibana-accent); border: none; border-radius: 6px;
+      padding: 10px 20px; color: #fff; font-size: 13px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+      transition: background 0.2s;
+    }
+    .cf-export-btn:hover:not(:disabled) { background: #2891de; }
+    .cf-export-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .cf-status {
+      margin-top: 14px; font-size: 12px;
+      padding: 10px 12px; border-radius: 6px; display: none;
+    }
+    .cf-status.ok {
+      background: rgba(125,226,209,0.12); color: var(--kibana-success);
+      border: 1px solid rgba(125,226,209,0.3);
+    }
+    .cf-status.err {
+      background: rgba(255,107,107,0.12); color: var(--kibana-error);
+      border: 1px solid rgba(255,107,107,0.3);
+    }
+    .cf-help {
+      font-size: 11px; color: var(--kibana-text-muted);
+      margin-top: 4px;
+    }
+
+  .cf-header
+    .brand
+      i.fas.fa-database
+      span Contentful Utility
+    .actions
+      a.cf-back(href="/select")
+        i.fas.fa-arrow-left
+        span Back
+      form(method="POST" action="/auth/logout" style="display:inline;")
+        button.cf-logout(type="submit")
+          i.fas.fa-sign-out-alt
+          span Logout
+
+  .cf-wrap
+    h1.cf-title Export Contentful entries
+    p.cf-sub Configure your query and download the result as CSV, Excel, or JSON.
+
+    .cf-card
+      form#cfForm(onsubmit="return false;")
+        .cf-row
+          div
+            label.cf-label(for="contentType") Content type
+            input#contentType.cf-input(name="content_type" value="keyValue" placeholder="e.g. keyValue")
+          div
+            label.cf-label(for="limit") Limit
+            input#limit.cf-input(name="limit" type="number" min="1" max="1000" value="1000")
+
+        .cf-row.single
+          div
+            label.cf-label(for="select") Select fields (comma-separated)
+            input#select.cf-input(name="select" value="fields.key,fields.value")
+            .cf-help e.g. fields.key,fields.value
+
+        .cf-row.single
+          div
+            .cf-locales-header
+              label.cf-label Locales
+              button.cf-toggle-all(type="button" onclick="toggleAllLocales()") Select all (ALL)
+            .cf-locales
+              each loc in locales
+                label.cf-locale(data-locale=loc)
+                  input(type="checkbox" name="locale" value=loc checked=(loc === 'en'))
+                  span= loc
+
+        .cf-row
+          div
+            label.cf-label(for="format") Format
+            select#format.cf-select(name="export")
+              each f in formats
+                option(value=f selected=(f === 'csv'))= f.toUpperCase() + (f === 'excel' ? ' (.xls)' : (f === 'csv' ? ' (.csv)' : ' (.json)'))
+          .cf-actions
+            button#exportBtn.cf-export-btn(type="button" onclick="runExport()")
+              i.fas.fa-download
+              span Export
+
+      #cfStatus.cf-status
+
+  script.
+    var allLocales = !{JSON.stringify(locales)};
+
+    // Sync `.checked` class on the wrapping label
+    function refreshLocaleStyles() {
+      document.querySelectorAll('.cf-locale').forEach(function(label) {
+        var cb = label.querySelector('input[type="checkbox"]');
+        label.classList.toggle('checked', cb.checked);
+      });
+    }
+    document.querySelectorAll('.cf-locale input[type="checkbox"]').forEach(function(cb) {
+      cb.addEventListener('change', refreshLocaleStyles);
+    });
+    refreshLocaleStyles();
+
+    function getCheckedLocales() {
+      return Array.from(document.querySelectorAll('.cf-locale input[type="checkbox"]:checked'))
+        .map(function(cb) { return cb.value; });
+    }
+
+    function toggleAllLocales() {
+      var checked = getCheckedLocales();
+      var selectAll = checked.length !== allLocales.length;
+      document.querySelectorAll('.cf-locale input[type="checkbox"]').forEach(function(cb) {
+        cb.checked = selectAll;
+      });
+      refreshLocaleStyles();
+    }
+
+    function showStatus(msg, ok) {
+      var el = document.getElementById('cfStatus');
+      el.textContent = msg;
+      el.className = 'cf-status ' + (ok ? 'ok' : 'err');
+      el.style.display = 'block';
+    }
+
+    async function runExport() {
+      var contentType = document.getElementById('contentType').value.trim();
+      var limit = document.getElementById('limit').value || '1000';
+      var select = document.getElementById('select').value.trim();
+      var format = document.getElementById('format').value;
+      var locales = getCheckedLocales();
+
+      if (!contentType) { showStatus('content_type is required', false); return; }
+      if (locales.length === 0) { showStatus('Select at least one locale', false); return; }
+
+      var localeParam = (locales.length === allLocales.length) ? 'ALL' : locales.join(',');
+      var params = new URLSearchParams({
+        content_type: contentType,
+        limit: limit,
+        locale: localeParam,
+        export: format
+      });
+      if (select) params.set('select', select);
+
+      var btn = document.getElementById('exportBtn');
+      btn.disabled = true;
+      var prevHTML = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>Exporting...</span>';
+
+      try {
+        var res = await fetch('/contentful/export?' + params.toString(), {
+          credentials: 'same-origin'
+        });
+
+        if (!res.ok) {
+          var errText = '';
+          try { var j = await res.json(); errText = j.message || j.error || ''; } catch (_) {}
+          throw new Error(errText || ('Export failed (' + res.status + ')'));
+        }
+
+        // Derive filename from Content-Disposition
+        var disposition = res.headers.get('Content-Disposition') || '';
+        var match = disposition.match(/filename="?([^";]+)"?/i);
+        var ext = format === 'excel' ? 'xls' : format;
+        var filename = (match && match[1]) ? match[1] : ('contentful-' + contentType + '.' + ext);
+
+        var blob = await res.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+
+        showStatus('Downloaded ' + filename, true);
+      } catch (e) {
+        showStatus('Export failed: ' + (e.message || e), false);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = prevHTML;
+      }
+    }

@@ -770,9 +770,27 @@ html(lang="en")
         - var isLogin = title && title.includes('Login')
         - var isSelect = (typeof currentPath !== 'undefined' && currentPath === '/select') || (title && title.includes('Select'))
         if !isLogin && !isSelect
-          button.btn-kibana-secondary#backBtn(type="button" onclick="if(document.referrer && new URL(document.referrer).origin === location.origin){history.back();}else{location.href='/select';}" title="Back")
+          button.btn-kibana-secondary#backBtn(type="button" title="Back")
             i.fas.fa-arrow-left.me-2
             | Back
+          script.
+            (function(){
+              var btn = document.getElementById('backBtn');
+              if (!btn) return;
+              btn.addEventListener('click', function(){
+                try {
+                  var ref = document.referrer;
+                  if (ref) {
+                    var refOrigin = ref.split('/').slice(0, 3).join('/');
+                    if (refOrigin === window.location.origin) {
+                      window.history.back();
+                      return;
+                    }
+                  }
+                } catch (e) {}
+                window.location.href = '/select';
+              });
+            })();
         .kibana-logo
           i.fas.fa-layer-group
           span Logs Explorer

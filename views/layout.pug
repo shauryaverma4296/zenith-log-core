@@ -766,11 +766,18 @@ html(lang="en")
       }
   body
     .kibana-header
-      .kibana-logo
-        i.fas.fa-layer-group
-        span Logs Explorer
+      div(style="display: flex; align-items: center; gap: 16px;")
+        - var isLogin = title && title.includes('Login')
+        - var isSelect = (typeof currentPath !== 'undefined' && currentPath === '/select') || (title && title.includes('Select'))
+        if !isLogin && !isSelect
+          button.btn-kibana-secondary#backBtn(type="button" onclick="if(document.referrer && new URL(document.referrer).origin === location.origin){history.back();}else{location.href='/select';}" title="Back")
+            i.fas.fa-arrow-left.me-2
+            | Back
+        .kibana-logo
+          i.fas.fa-layer-group
+          span Logs Explorer
       div
-        if title && title.includes('Login')
+        if isLogin
           // Nothing
         else
           form.d-inline(method="POST" action="/auth/logout" style="margin: 0;")

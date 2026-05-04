@@ -44,7 +44,7 @@ router.post('/login', async (req, res) => {
     if (result) {
       req.session.authToken = result.token;
       req.session.username = username;
-      req.session.access = result.access;
+      req.session.roles = result.roles;
       req.session.cookie.maxAge = rememberMe
         ? 30 * 24 * 60 * 60 * 1000
         : 24 * 60 * 60 * 1000;

@@ -77,16 +77,16 @@ router.post('/get-token', async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
-      return res.status(400).json({ message: 'Username and password are required', token: null, access: [] });
+      return res.status(400).json({ message: 'Username and password are required', token: null, roles: [] });
     }
     const result = authenticate(username, password);
     if (!result) {
-      return res.status(401).json({ message: 'Invalid credentials', token: null, access: [] });
+      return res.status(401).json({ message: 'Invalid credentials', token: null, roles: [] });
     }
     return res.json({ message: 'Login successful', ...result });
   } catch (error) {
     console.error('Auth error:', error);
-    res.status(500).json({ message: 'Authentication service unavailable', token: null, access: [] });
+    res.status(500).json({ message: 'Authentication service unavailable', token: null, roles: [] });
   }
 });
 

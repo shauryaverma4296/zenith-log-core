@@ -37,6 +37,51 @@ function flatten(items, locale) {
   }));
 }
 
+// Fetch ALL entries for a given query, paginating through skip/limit.
+// Contentful caps page size at 1000.
+async function fetchAllEntries(client, baseQuery) {
+  const PAGE = 1000;
+  const all = [];
+  let skip = 0;
+  // Cap absolute total to avoid runaway loops (Contentful spaces are bounded anyway)
+  const HARD_CAP = 100000;
+  // First request to know total
+  while (true) {
+    const res = await client.getEntries({ ...baseQuery, limit: PAGE, skip });
+    all.push(...res.items);
+    const total = res.total ?? all.length;
+    skip += res.items.length;
+    if (res.items.length === 0 || skip >= total || all.length >= HARD_CAP) break;
+  }
+  return all;
+}
+
+// Pivot rows so each unique `key` gets one row with one column per locale.
+// Falls back to `id` when fields.key is not present.
+function pivotByKey(perLocale, locales) {
+  const map = new Map(); // key -> { key, en: ..., ar: ..., ... }
+  for (const loc of locales) {
+    const rows = perLocale[loc] || [];
+    for (const r of rows) {
+      const k = r.key != null ? String(r.key) : (r.id != null ? String(r.id) : '');
+      if (!k) continue;
+      if (!map.has(k)) map.set(k, { key: k });
+      const obj = map.get(k);
+      // Prefer `value`; otherwise stringify all non-meta fields
+      let v;
+      if ('value' in r) {
+        v = r.value;
+      } else {
+        const { locale, id, updatedAt, key, ...rest } = r;
+        const keys = Object.keys(rest);
+        v = keys.length === 1 ? rest[keys[0]] : rest;
+      }
+      obj[loc] = v;
+    }
+  }
+  return Array.from(map.values());
+}
+
 function toCSV(rows) {
   if (!rows.length) return '';
   const headers = Array.from(

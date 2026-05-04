@@ -37,6 +37,51 @@ function flatten(items, locale) {
   }));
 }
 
+// Fetch ALL entries for a given query, paginating through skip/limit.
+// Contentful caps page size at 1000.
+async function fetchAllEntries(client, baseQuery) {
+  const PAGE = 1000;
+  const all = [];
+  let skip = 0;
+  // Cap absolute total to avoid runaway loops (Contentful spaces are bounded anyway)
+  const HARD_CAP = 100000;
+  // First request to know total
+  while (true) {
+    const res = await client.getEntries({ ...baseQuery, limit: PAGE, skip });
+    all.push(...res.items);
+    const total = res.total ?? all.length;
+    skip += res.items.length;
+    if (res.items.length === 0 || skip >= total || all.length >= HARD_CAP) break;
+  }
+  return all;
+}
+
+// Pivot rows so each unique `key` gets one row with one column per locale.
+// Falls back to `id` when fields.key is not present.
+function pivotByKey(perLocale, locales) {
+  const map = new Map(); // key -> { key, en: ..., ar: ..., ... }
+  for (const loc of locales) {
+    const rows = perLocale[loc] || [];
+    for (const r of rows) {
+      const k = r.key != null ? String(r.key) : (r.id != null ? String(r.id) : '');
+      if (!k) continue;
+      if (!map.has(k)) map.set(k, { key: k });
+      const obj = map.get(k);
+      // Prefer `value`; otherwise stringify all non-meta fields
+      let v;
+      if ('value' in r) {
+        v = r.value;
+      } else {
+        const { locale, id, updatedAt, key, ...rest } = r;
+        const keys = Object.keys(rest);
+        v = keys.length === 1 ? rest[keys[0]] : rest;
+      }
+      obj[loc] = v;
+    }
+  }
+  return Array.from(map.values());
+}
+
 function toCSV(rows) {
   if (!rows.length) return '';
   const headers = Array.from(
@@ -80,12 +125,13 @@ router.get('/', (req, res) => {
 });
 
 // Export endpoint — triggers a file download
-// Example: /contentful/export?content_type=keyValue&limit=1000&select=fields.key,fields.value&locale=en&export=csv
+// Example: /contentful/export?content_type=keyValue&select=fields.key,fields.value&locale=en&export=csv
+// `limit` is optional. When omitted, ALL entries are fetched (paginated).
 router.get('/export', async (req, res) => {
   try {
     const {
       content_type,
-      limit = '1000',
+      limit, // optional
       select,
       locale = 'en',
       export: exportFormat = 'json',
@@ -109,25 +155,31 @@ router.get('/export', async (req, res) => {
       }
     }
 
+    const parsedLimit = limit != null && limit !== '' ? parseInt(limit, 10) : null;
+    const fetchAll = !parsedLimit || parsedLimit <= 0;
+
     const client = getClient();
     const allRows = [];
     const perLocale = {};
 
     for (const loc of locales) {
-      const query = {
-        content_type,
-        limit: Math.min(parseInt(limit, 10) || 1000, 1000),
-        locale: loc,
-      };
-      if (select) query.select = select;
+      const baseQuery = { content_type, locale: loc };
+      if (select) baseQuery.select = select;
 
-      const response = await client.getEntries(query);
-      const rows = flatten(response.items, loc);
+      let items;
+      if (fetchAll) {
+        items = await fetchAllEntries(client, baseQuery);
+      } else {
+        const response = await client.getEntries({ ...baseQuery, limit: Math.min(parsedLimit, 1000) });
+        items = response.items;
+      }
+      const rows = flatten(items, loc);
       perLocale[loc] = rows;
       allRows.push(...rows);
     }
 
     const baseName = `contentful-${content_type}-${locales.join('_')}`;
+    const pivoted = pivotByKey(perLocale, locales);
 
     if (exportFormat === 'json') {
       res.setHeader('Content-Type', 'application/json');
@@ -137,12 +189,12 @@ router.get('/export', async (req, res) => {
     if (exportFormat === 'csv') {
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${baseName}.csv"`);
-      return res.send(toCSV(allRows));
+      return res.send(toCSV(pivoted));
     }
     if (exportFormat === 'excel') {
       res.setHeader('Content-Type', 'application/vnd.ms-excel');
       res.setHeader('Content-Disposition', `attachment; filename="${baseName}.xls"`);
-      return res.send(toExcelXML(allRows));
+      return res.send(toExcelXML(pivoted));
     }
   } catch (err) {
     console.error('Contentful export error:', err);

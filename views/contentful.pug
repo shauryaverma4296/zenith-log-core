@@ -120,8 +120,8 @@ block content
             label.cf-label(for="contentType") Content type
             input#contentType.cf-input(name="content_type" value="keyValue" placeholder="e.g. keyValue")
           div
-            label.cf-label(for="limit") Limit
-            input#limit.cf-input(name="limit" type="number" min="1" max="1000" value="1000")
+            label.cf-label(for="limit") Limit (optional)
+            input#limit.cf-input(name="limit" type="number" min="1" placeholder="Leave empty for ALL")
 
         .cf-row.single
           div
@@ -191,7 +191,7 @@ block content
 
     async function runExport() {
       var contentType = document.getElementById('contentType').value.trim();
-      var limit = document.getElementById('limit').value || '1000';
+      var limit = document.getElementById('limit').value.trim();
       var select = document.getElementById('select').value.trim();
       var format = document.getElementById('format').value;
       var locales = getCheckedLocales();
@@ -202,10 +202,10 @@ block content
       var localeParam = (locales.length === allLocales.length) ? 'ALL' : locales.join(',');
       var params = new URLSearchParams({
         content_type: contentType,
-        limit: limit,
         locale: localeParam,
         export: format
       });
+      if (limit) params.set('limit', limit);
       if (select) params.set('select', select);
 
       var btn = document.getElementById('exportBtn');

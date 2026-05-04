@@ -1,18 +1,19 @@
 const express = require('express');
 const router = express.Router();
 
-// Demo user directory: maps credentials to allowed tabs.
-// Replace with a real auth service in production.
+// Demo user directory: maps credentials to roles.
+// Add new roles freely (e.g. 'editor', 'auditor'). Tool access is decided
+// by the tool registry (see views/select.pug and src/server.js TOOL_ROLES).
 const USERS = {
-  admin:  { password: 'password', access: ['logs', 'contentful'] },
-  viewer: { password: 'password', access: ['logs'] },
-  editor: { password: 'password', access: ['contentful'] },
+  admin:  { password: 'password', roles: ['admin'] },
+  user:   { password: 'password', roles: ['user'] },
+  viewer: { password: 'password', roles: ['user'] },
 };
 
 function authenticate(username, password) {
   const u = USERS[username];
   if (!u || u.password !== password) return null;
-  return { token: 'demo-jwt-token-' + Date.now(), access: u.access };
+  return { token: 'demo-jwt-token-' + Date.now(), roles: u.roles };
 }
 
 // Login page

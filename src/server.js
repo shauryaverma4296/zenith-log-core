@@ -31,11 +31,18 @@ app.use(express.urlencoded({ extended: true }));
 // Static files (if any)
 app.use('/static', express.static(path.join(__dirname, '../public')));
 
+// Single source of truth: which roles can access which tool.
+// Add a new tool/role here and it works across server + views.
+const TOOL_ROLES = {
+  logs: ['user', 'admin'],
+  contentful: ['user'],
+};
+
 // Expose session info to all templates
 app.use((req, res, next) => {
   res.locals.session = req.session || {};
   res.locals.username = req.session?.username || null;
-  res.locals.access = req.session?.access || [];
+  res.locals.roles = req.session?.roles || [];
   next();
 });
 
@@ -45,14 +52,16 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-// Per-tab access required
-const requireAccess = (tab) => (req, res, next) => {
+// Per-tool access required (role-based)
+const requireAccess = (tool) => (req, res, next) => {
   if (!req.session?.authToken) return res.redirect('/auth/login');
-  const access = req.session.access || [];
-  if (!access.includes(tab)) {
+  const userRoles = req.session.roles || [];
+  const allowedRoles = TOOL_ROLES[tool] || [];
+  const allowed = userRoles.some((r) => allowedRoles.includes(r));
+  if (!allowed) {
     return res.status(403).render('error', {
       title: 'Access Denied',
-      message: `You don't have access to "${tab}". Contact an administrator.`
+      message: `You don't have access to "${tool}". Contact an administrator.`
     });
   }
   next();
@@ -62,7 +71,7 @@ const requireAccess = (tab) => (req, res, next) => {
 app.get('/select', requireAuth, (req, res) => {
   res.render('select', {
     title: 'Select Tool - Logger Dashboard',
-    access: req.session.access || [],
+    roles: req.session.roles || [],
     username: req.session.username
   });
 });

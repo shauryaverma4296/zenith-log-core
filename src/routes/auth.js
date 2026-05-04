@@ -1,18 +1,19 @@
 const express = require('express');
 const router = express.Router();
 
-// Demo user directory: maps credentials to allowed tabs.
-// Replace with a real auth service in production.
+// Demo user directory: maps credentials to roles.
+// Add new roles freely (e.g. 'editor', 'auditor'). Tool access is decided
+// by the tool registry (see views/select.pug and src/server.js TOOL_ROLES).
 const USERS = {
-  admin:  { password: 'password', access: ['logs', 'contentful'] },
-  viewer: { password: 'password', access: ['logs'] },
-  editor: { password: 'password', access: ['contentful'] },
+  admin:  { password: 'password', roles: ['admin'] },
+  user:   { password: 'password', roles: ['user'] },
+  viewer: { password: 'password', roles: ['user'] },
 };
 
 function authenticate(username, password) {
   const u = USERS[username];
   if (!u || u.password !== password) return null;
-  return { token: 'demo-jwt-token-' + Date.now(), access: u.access };
+  return { token: 'demo-jwt-token-' + Date.now(), roles: u.roles };
 }
 
 // Login page
@@ -43,7 +44,7 @@ router.post('/login', async (req, res) => {
     if (result) {
       req.session.authToken = result.token;
       req.session.username = username;
-      req.session.access = result.access;
+      req.session.roles = result.roles;
       req.session.cookie.maxAge = rememberMe
         ? 30 * 24 * 60 * 60 * 1000
         : 24 * 60 * 60 * 1000;
@@ -76,16 +77,16 @@ router.post('/get-token', async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
-      return res.status(400).json({ message: 'Username and password are required', token: null, access: [] });
+      return res.status(400).json({ message: 'Username and password are required', token: null, roles: [] });
     }
     const result = authenticate(username, password);
     if (!result) {
-      return res.status(401).json({ message: 'Invalid credentials', token: null, access: [] });
+      return res.status(401).json({ message: 'Invalid credentials', token: null, roles: [] });
     }
     return res.json({ message: 'Login successful', ...result });
   } catch (error) {
     console.error('Auth error:', error);
-    res.status(500).json({ message: 'Authentication service unavailable', token: null, access: [] });
+    res.status(500).json({ message: 'Authentication service unavailable', token: null, roles: [] });
   }
 });
 

@@ -31,12 +31,39 @@ app.use(express.urlencoded({ extended: true }));
 // Static files (if any)
 app.use('/static', express.static(path.join(__dirname, '../public')));
 
-// Single source of truth: which roles can access which tool.
+// Single source of truth: tool registry (metadata + role-based access).
 // Add a new tool/role here and it works across server + views.
-const TOOL_ROLES = {
-  logs: ['user', 'admin'],
-  contentful: ['user'],
-};
+const TOOLS = [
+  {
+    key: 'logs',
+    name: 'Logs',
+    icon: 'fa-stream',
+    desc: 'Browse, filter and search application logs.',
+    href: '/logs',
+    roles: ['user', 'admin'],
+  },
+  {
+    key: 'contentful',
+    name: 'Contentful Utility',
+    icon: 'fa-database',
+    desc: 'Export Contentful entries as CSV, Excel, or JSON.',
+    href: '/contentful',
+    roles: ['user'],
+  },
+];
+
+const TOOL_ROLES = TOOLS.reduce((acc, t) => {
+  acc[t.key] = t.roles;
+  return acc;
+}, {});
+
+// Build the list of tools the current user can access (with `allowed` flag).
+function getToolsForUser(userRoles = []) {
+  return TOOLS.map((t) => ({
+    ...t,
+    allowed: userRoles.some((r) => t.roles.includes(r)),
+  }));
+}
 
 // Expose session info to all templates
 app.use((req, res, next) => {

@@ -82,20 +82,14 @@ block content
     h1.select-title Where would you like to go?
     p.select-sub Choose a tool below. Tiles you don't have access to are disabled.
 
-    //- Tool registry. To add a new tool or role, just append here.
-    //- `roles` lists which roles can access the tool. Add more roles freely.
-    - var tools = [{ key: 'logs', name: 'Logs', icon: 'fa-stream', desc: 'Browse, filter and search application logs.', href: '/logs', roles: ['user', 'admin'] }, { key: 'contentful', name: 'Contentful Utility', icon: 'fa-database', desc: 'Export Contentful entries as CSV, Excel, or JSON.', href: '/contentful', roles: ['user'] }]
-    - var userRoles = (typeof roles !== 'undefined' && roles) ? roles : []
-
     .tools-grid
-      each tool in tools
-        - var allowed = userRoles.some(function(r){ return tool.roles.indexOf(r) !== -1; })
-        a.tool-tile(href=allowed ? tool.href : '#' class=allowed ? 'enabled' : 'disabled' aria-disabled=!allowed)
-          if !allowed
+      each tool in (tools || [])
+        a.tool-tile(href=tool.allowed ? tool.href : '#' class=tool.allowed ? 'enabled' : 'disabled' aria-disabled=!tool.allowed)
+          if !tool.allowed
             i.fas.fa-lock.tool-lock
           .tool-icon-wrap
             i(class="fas " + tool.icon)
           h2.tool-name= tool.name
           p.tool-desc= tool.desc
-          if !allowed
+          if !tool.allowed
             p.no-access-note No access — contact an administrator.

@@ -96,10 +96,12 @@ const requireAccess = (tool) => (req, res, next) => {
 
 // Selector page (lists tools the user can open)
 app.get('/select', requireAuth, (req, res) => {
+  const userRoles = req.session.roles || [];
   res.render('select', {
     title: 'Select Tool - Logger Dashboard',
-    roles: req.session.roles || [],
-    username: req.session.username
+    roles: userRoles,
+    username: req.session.username,
+    tools: getToolsForUser(userRoles)
   });
 });
 

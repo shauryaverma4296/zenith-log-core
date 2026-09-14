@@ -2,6 +2,12 @@ extends layout
 
 block content
   style.
+    .cf-header { background: var(--kibana-header); border-bottom: 1px solid var(--kibana-border); padding: 0 16px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+    .cf-header .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+    .cf-header .brand i { color: var(--kibana-accent); }
+    .cf-header .actions { display: flex; align-items: center; gap: 8px; }
+    .cf-back, .cf-logout { background: transparent; border: 1px solid var(--kibana-border); color: var(--kibana-text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .cf-back:hover, .cf-logout:hover { border-color: var(--kibana-accent); color: var(--kibana-accent); }
     .iu-wrap { max-width: 1040px; margin: 0 auto; padding: 40px 24px 64px; }
     .iu-eyebrow { color: var(--kibana-accent); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 8px; }
     .iu-title { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
@@ -32,6 +38,7 @@ block content
     .iu-status.ok { background: rgba(125,226,209,.12); border: 1px solid rgba(125,226,209,.3); color: var(--kibana-success); }
     .iu-status.err { background: rgba(255,107,107,.12); border: 1px solid rgba(255,107,107,.3); color: var(--kibana-error); }
     .iu-results { margin-top: 20px; overflow-x: auto; }
+    .iu-results > .iu-card { padding: 0; border: 0; }
     .iu-results table { border-collapse: collapse; min-width: 760px; width: 100%; }
     .iu-results th, .iu-results td { border-bottom: 1px solid var(--kibana-border); padding: 10px; text-align: left; vertical-align: top; }
     .iu-results th { color: var(--kibana-text-muted); font-size: 10px; text-transform: uppercase; }
@@ -42,6 +49,19 @@ block content
     .iu-badge.duplicate-skipped { background: rgba(245,166,35,.14); color: var(--kibana-warning); }
     .iu-badge.failed { background: rgba(255,107,107,.14); color: var(--kibana-error); }
     @media (max-width: 760px) { .iu-grid { grid-template-columns: 1fr; } .iu-wrap { padding: 28px 16px 48px; } }
+
+  .cf-header
+    .brand
+      i.fas.fa-images
+      span Image Upload Utility
+    .actions
+      a.cf-back(href="/select")
+        i.fas.fa-arrow-left
+        span Back
+      form(method="POST" action="/auth/logout" style="display:inline;")
+        button.cf-logout(type="submit")
+          i.fas.fa-sign-out-alt
+          span Logout
 
   .iu-wrap
     p.iu-eyebrow Image pipeline
@@ -65,7 +85,7 @@ block content
               i.fas.fa-upload.me-2
               | Start upload
           #uploadStatus.iu-status
-        .iu-results#results
+        #results
 
       .iu-card
         h2.iu-card-title Workflow

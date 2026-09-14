@@ -84,12 +84,4 @@ block content
 
     .tools-grid
       each tool in (tools || [])
-        a.tool-tile(href=tool.allowed ? tool.href : '#' class=tool.allowed ? 'enabled' : 'disabled' aria-disabled=!tool.allowed)
-          if !tool.allowed
-            i.fas.fa-lock.tool-lock
-          .tool-icon-wrap
-            i(class="fas " + tool.icon)
-          h2.tool-name= tool.name
-          p.tool-desc= tool.desc
-          if !tool.allowed
-            p.no-access-note No access — contact an administrator.
+        +toolCard(tool)

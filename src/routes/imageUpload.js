@@ -198,6 +198,25 @@ function assetUrl(asset) {
   return url.startsWith('//') ? `https:${url}` : url;
 }
 
+function wait(milliseconds) {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+
+async function waitForProcessedAsset(assetId, config) {
+  const attempts = Number(process.env.CONTENTFUL_PROCESS_ATTEMPTS || 15);
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const asset = await contentfulRequest(
+      `/assets/${encodeURIComponent(assetId)}`,
+      config,
+      {},
+      `Retrieve processed Contentful asset ${assetId}`,
+    );
+    if (asset.fields?.file?.en?.url) return asset;
+    if (attempt < attempts - 1) await wait(1000);
+  }
+  throw new Error(`Contentful asset ${assetId} did not finish processing in time`);
+}
+
 async function uploadAsset(file, unitName, product, config) {
   const existing = await findExistingAsset(unitName, file.originalname, config);
   if (existing) {
@@ -214,12 +233,13 @@ async function uploadAsset(file, unitName, product, config) {
   }
 
   const tags = await ensureTagsExist(product.tags, config);
-  const uploadForm = new FormData();
-  uploadForm.append('file', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
   const uploadResponse = await fetch(`${CONTENTFUL_UPLOADS_API}/spaces/${encodeURIComponent(config.contentfulSpaceId)}/uploads`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${config.contentfulManagementToken}` },
-    body: uploadForm,
+    headers: {
+      Authorization: `Bearer ${config.contentfulManagementToken}`,
+      'Content-Type': 'application/octet-stream',
+    },
+    body: file.buffer,
   });
   const uploadBody = await readResponse(uploadResponse, `Upload ${file.originalname} to Contentful`);
   const uploadId = uploadBody.sys?.id;
@@ -248,9 +268,13 @@ async function uploadAsset(file, unitName, product, config) {
     method: 'PUT',
     headers: { 'Content-Type': 'application/vnd.contentful.management.v1+json' },
   }, `Process Contentful asset ${unitName}`);
+  const processedAsset = await waitForProcessedAsset(assetId, config);
   await contentfulRequest(`/assets/${encodeURIComponent(assetId)}/published`, config, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/vnd.contentful.management.v1+json' },
+    headers: {
+      'Content-Type': 'application/vnd.contentful.management.v1+json',
+      'X-Contentful-Version': String(processedAsset.sys.version),
+    },
   }, `Publish Contentful asset ${unitName}`);
   const publishedAsset = await contentfulRequest(`/assets/${encodeURIComponent(assetId)}`, config, {}, `Retrieve Contentful asset ${unitName}`);
 

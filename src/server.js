@@ -4,6 +4,7 @@ const session = require('express-session');
 const logsRouter = require('./routes/logs');
 const authRouter = require('./routes/auth');
 const contentfulRouter = require('./routes/contentful');
+const imageUploadRouter = require('./routes/imageUpload');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -48,6 +49,14 @@ const TOOLS = [
     icon: 'fa-database',
     desc: 'Export Contentful entries as CSV, Excel, or JSON.',
     href: '/contentful',
+    roles: ['user'],
+  },
+  {
+    key: 'image-upload',
+    name: 'Image Upload Utility',
+    icon: 'fa-images',
+    desc: 'Match unit images with products and publish them to Contentful in bulk.',
+    href: '/utility/image-upload',
     roles: ['user'],
   },
 ];
@@ -109,6 +118,7 @@ app.get('/select', requireAuth, (req, res) => {
 app.use('/auth', authRouter);
 app.use('/logs', requireAccess('logs'), logsRouter);
 app.use('/contentful', requireAccess('contentful'), contentfulRouter);
+app.use('/utility/image-upload', requireAccess('image-upload'), imageUploadRouter);
 
 // Root redirect
 app.get('/', (req, res) => {

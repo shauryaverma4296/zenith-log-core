@@ -6,9 +6,10 @@
   "scripts": {
     "tsc": "tsc",
     "tsc:watch": "tsc --watch",
-    "dev": "node src/index.js",
+    "dev": "node src/server.js",
+    "build:dev": "node src/server.js",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node src/server.js",
     "dev:express": "ts-node examples/express-no-prop-drilling.js",
     "dev:database": "ts-node examples/database-logging-config.ts",
     "dev:javascript": "ts-node examples/javascript-usage.js"

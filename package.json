@@ -6,10 +6,9 @@
   "scripts": {
     "tsc": "tsc",
     "tsc:watch": "tsc --watch",
-    "dev": "node src/server.js",
-    "build:dev": "node src/server.js",
+    "dev": "node src/index.js",
     "build": "tsc",
-    "start": "node src/server.js",
+    "start": "node dist/index.js",
     "dev:express": "ts-node examples/express-no-prop-drilling.js",
     "dev:database": "ts-node examples/database-logging-config.ts",
     "dev:javascript": "ts-node examples/javascript-usage.js"
@@ -32,6 +31,7 @@
     "lucide-react": "^0.561.0",
     "moment": "^2.30.1",
     "mongodb": "^6.18.0",
+    "multer": "^2.4.0",
     "pug": "^3.0.3",
     "react-router-dom": "^7.11.0",
     "sonner": "^2.0.7",

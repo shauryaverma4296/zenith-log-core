@@ -70,7 +70,10 @@ function getPath(value, paths) {
 }
 
 function filenameUnit(originalname) {
-  return originalname.replace(/\.[^/.]+$/, '').trim();
+  return originalname
+    .replace(/\.[^/.]+$/, '')
+    .trim()
+    .replace(/_+/g, '/');
 }
 
 function slugify(value) {

@@ -71,7 +71,7 @@ block content
     .iu-grid
       .iu-card
         h2.iu-card-title Choose images
-        p.iu-help Unit names are read from the filename without its extension. For example, #[code UNIT-204.jpg] looks up unit #[code UNIT-204]. Upload up to 10 images, each up to 20 MB.
+        p.iu-help Unit names are read from the filename without its extension, and underscores are converted to slashes. For example, #[code CHLB_17_1701.jpg] looks up unit #[code CHLB/17/1701]. Upload up to 10 images, each up to 20 MB.
         form#imageUploadForm(enctype="multipart/form-data")
           label.iu-dropzone#dropzone(for="images")
             i.fas.fa-cloud-upload-alt

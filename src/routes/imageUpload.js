@@ -148,17 +148,22 @@ async function getProductDetails(token, unitName, config) {
   return { ...productDetails, tags: uniqueValues([unitName, productDetails.projectName, productDetails.buildingCode, productDetails.floorNumber]) };
 }
 
-async function getContentfulEnvironment(config) {
-  const client = contentfulManagement.createClient({
-    accessToken: config.contentfulManagementToken,
-  });
-  const space = await client.getSpace(config.contentfulSpaceId);
-  return space.getEnvironment(config.contentfulEnvironmentId);
+function getContentfulClient(config) {
+  return contentfulManagement.createClient(
+    { accessToken: config.contentfulManagementToken },
+    {
+      type: 'plain',
+      defaults: {
+        spaceId: config.contentfulSpaceId,
+        environmentId: config.contentfulEnvironmentId,
+      },
+    },
+  );
 }
 
-async function ensureTagsExist(tags, environment) {
+async function ensureTagsExist(tags, client) {
   if (!tags.length) return [];
-  const existing = await environment.getTags({ limit: 1000 });
+  const existing = await client.tag.getMany({ query: { limit: 1000 } });
   const byName = new Map((existing.items || []).map(tag => [tag.name, tag]));
   const links = [];
 
@@ -166,7 +171,10 @@ async function ensureTagsExist(tags, environment) {
     let tag = byName.get(name);
     if (!tag) {
       const tagId = slugify(name);
-      tag = await environment.createTagWithId(tagId, { name, visibility: 'public' });
+      tag = await client.tag.createWithId(
+        { tagId },
+        { name, sys: { visibility: 'public' } },
+      );
       byName.set(name, tag);
     }
     if (tag.sys?.id) links.push({ sys: { type: 'Link', linkType: 'Tag', id: tag.sys.id } });
@@ -174,8 +182,8 @@ async function ensureTagsExist(tags, environment) {
   return links;
 }
 
-async function findExistingAsset(unitName, filename, environment, locale) {
-  const assets = await environment.getAssets({ limit: 1000 });
+async function findExistingAsset(unitName, filename, client, locale) {
+  const assets = await client.asset.getMany({ query: { limit: 1000 } });
   const normalizedUnit = unitName.toLowerCase();
   const normalizedFilename = filename.toLowerCase();
   return (assets.items || []).find(asset => {
@@ -190,13 +198,13 @@ function assetUrl(asset, locale) {
   return url.startsWith('//') ? `https:${url}` : url;
 }
 
-async function uploadAsset(file, unitName, product, config, environment) {
+async function uploadAsset(file, unitName, product, config, client) {
   const locale = config.contentfulLocale;
   const fileData = file.buffer.buffer.slice(
     file.buffer.byteOffset,
     file.buffer.byteOffset + file.buffer.byteLength,
   );
-  const existing = await findExistingAsset(unitName, file.originalname, environment, locale);
+  const existing = await findExistingAsset(unitName, file.originalname, client, locale);
   if (existing) {
     return {
       unitName,
@@ -210,26 +218,29 @@ async function uploadAsset(file, unitName, product, config, environment) {
     };
   }
 
-  const tags = await ensureTagsExist(product.tags, environment);
-  let asset = await environment.createAssetFromFiles({
-    metadata: { tags },
-    fields: {
-      title: { [locale]: unitName },
-      description: { [locale]: `Unit:${unitName}` },
-      file: {
-        [locale]: {
-          fileName: file.originalname,
-          contentType: file.mimetype,
-          file: fileData,
+  const tags = await ensureTagsExist(product.tags, client);
+  let asset = await client.asset.createFromFiles(
+    {},
+    {
+      metadata: { tags },
+      fields: {
+        title: { [locale]: unitName },
+        description: { [locale]: `Unit:${unitName}` },
+        file: {
+          [locale]: {
+            fileName: file.originalname,
+            contentType: file.mimetype,
+            file: fileData,
+          },
         },
       },
     },
-  });
-  asset = await asset.processForLocale(locale, {
+  );
+  asset = await client.asset.processForLocale({}, asset, locale, {
     processingCheckWait: 1000,
     processingCheckRetries: Number(process.env.CONTENTFUL_PROCESS_ATTEMPTS || 15),
   });
-  asset = await asset.publish();
+  asset = await client.asset.publish({ assetId: asset.sys.id }, asset);
 
   return {
     unitName,
@@ -260,13 +271,13 @@ router.post('/upload', (req, res) => {
       if (!files.length) return res.status(400).json({ error: 'Choose at least one image to upload' });
 
       const token = await getCommercetoolsToken(config);
-      const environment = await getContentfulEnvironment(config);
+      const contentfulClient = getContentfulClient(config);
       const results = [];
       for (const file of files) {
         const unitName = filenameUnit(file.originalname);
         try {
           const product = await getProductDetails(token, unitName, config);
-          results.push(await uploadAsset(file, unitName, product, config, environment));
+          results.push(await uploadAsset(file, unitName, product, config, contentfulClient));
         } catch (error) {
           results.push({ unitName, assetUrl: '', productId: '', projectName: '', buildingCode: '', floorNumber: '', status: 'failed', error: error.message });
         }

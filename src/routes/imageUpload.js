@@ -26,6 +26,7 @@ function getConfig() {
     commercetoolsClientId: process.env.COMMERCETOOLS_CLIENT_ID,
     commercetoolsClientSecret: process.env.COMMERCETOOLS_CLIENT_SECRET,
     commercetoolsProjectKey: process.env.COMMERCETOOLS_PROJECT_KEY,
+    commercetoolsFloorPlanAttribute: process.env.COMMERCETOOLS_FLOOR_PLAN_ATTRIBUTE || 'floorPlan',
     contentfulManagementToken: process.env.CONTENTFUL_MANAGEMENT_TOKEN || process.env.CONTENTFUL_ACCESS_TOKEN,
     contentfulSpaceId: process.env.CONTENTFUL_SPACE_ID,
     contentfulEnvironmentId: process.env.CONTENTFUL_ENVIRONMENT_ID || process.env.CONTENTFUL_ENVIRONMENT || 'master',
@@ -42,6 +43,9 @@ function getConfig() {
   const missing = required.filter(([, value]) => !value).map(([name]) => name);
   if (missing.length) {
     throw new Error(`Upload utility is not configured. Missing: ${missing.join(', ')}`);
+  }
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(config.commercetoolsProjectKey)) {
+    throw new Error('COMMERCETOOLS_PROJECT_KEY must be the project key (for example, damac-staging), not a project UUID');
   }
   return config;
 }
@@ -125,7 +129,7 @@ async function getCommercetoolsToken(config) {
 }
 
 async function getProductDetails(token, unitName, config) {
-  const template = process.env.COMMERCETOOLS_PRODUCT_WHERE_TEMPLATE || 'masterData.current.name(en)="{unit}"';
+  const template = process.env.COMMERCETOOLS_PRODUCT_WHERE_TEMPLATE || 'masterData(current(name(en="{unit}")))';
   const where = template.replaceAll('{unit}', unitName.replace(/"/g, '\\"'));
   const params = new URLSearchParams({ where, limit: '1' });
   const response = await fetch(`${COMMERCETOOLS_API}/${encodeURIComponent(config.commercetoolsProjectKey)}/products?${params}`, {
@@ -141,11 +145,47 @@ async function getProductDetails(token, unitName, config) {
   const attributeMap = Object.fromEntries(attributes.map(attribute => [attribute.name, attribute.value]));
   const productDetails = {
     productId: product.id || '',
+    productVersion: product.version,
+    variantId: current.masterVariant?.id,
     projectName: getPath(product, ['projectName', 'project.name', 'masterData.current.custom.fields.projectName', 'masterData.current.name.en']) || getPath(attributeMap, ['projectName']),
     buildingCode: getPath(product, ['buildingCode', 'masterData.current.custom.fields.buildingCode']) || getPath(attributeMap, ['buildingCode']),
     floorNumber: getPath(product, ['floorNumber', 'masterData.current.custom.fields.floorNumber']) || getPath(attributeMap, ['floorNumber']),
   };
   return { ...productDetails, tags: uniqueValues([unitName, productDetails.projectName, productDetails.buildingCode, productDetails.floorNumber]) };
+}
+
+async function updateFloorPlan(token, product, floorPlanUrl, config) {
+  if (!product.productId || !Number.isInteger(product.productVersion)) {
+    throw new Error('Commercetools product response is missing its ID or version');
+  }
+  if (!Number.isInteger(product.variantId)) {
+    throw new Error(`Commercetools product ${product.productId} has no master variant ID`);
+  }
+  if (!floorPlanUrl) {
+    throw new Error(`No Contentful asset URL is available for product ${product.productId}`);
+  }
+
+  const response = await fetch(
+    `${COMMERCETOOLS_API}/${encodeURIComponent(config.commercetoolsProjectKey)}/products/${encodeURIComponent(product.productId)}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        version: product.productVersion,
+        actions: [{
+          action: 'setAttribute',
+          variantId: product.variantId,
+          name: config.commercetoolsFloorPlanAttribute,
+          value: floorPlanUrl,
+          staged: false,
+        }],
+      }),
+    },
+  );
+  await readResponse(response, `Update ${config.commercetoolsFloorPlanAttribute} for product ${product.productId}`);
 }
 
 function getContentfulClient(config) {
@@ -277,7 +317,13 @@ router.post('/upload', (req, res) => {
         const unitName = filenameUnit(file.originalname);
         try {
           const product = await getProductDetails(token, unitName, config);
-          results.push(await uploadAsset(file, unitName, product, config, contentfulClient));
+          const result = await uploadAsset(file, unitName, product, config, contentfulClient);
+          try {
+            await updateFloorPlan(token, product, result.assetUrl, config);
+            results.push(result);
+          } catch (error) {
+            results.push({ ...result, status: 'failed', error: error.message });
+          }
         } catch (error) {
           results.push({ unitName, assetUrl: '', productId: '', projectName: '', buildingCode: '', floorNumber: '', status: 'failed', error: error.message });
         }

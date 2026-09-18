@@ -15,6 +15,13 @@ block content
     .iu-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
     .iu-card { background: var(--kibana-sidebar); border: 1px solid var(--kibana-border); border-radius: 10px; padding: 24px; }
     .iu-card-title { font-size: 14px; font-weight: 700; margin: 0 0 6px; }
+    .iu-tabs { border-bottom: 1px solid var(--kibana-border); display: flex; gap: 4px; margin-bottom: 20px; }
+    .iu-tab { background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--kibana-text-muted); cursor: pointer; font-size: 13px; font-weight: 600; padding: 10px 14px; }
+    .iu-tab:hover { color: var(--kibana-text); }
+    .iu-tab.active { border-bottom-color: var(--kibana-accent); color: var(--kibana-accent); }
+    .iu-tab-panel { display: none; }
+    .iu-tab-panel.active { display: block; }
+    .iu-grid.iu-tab-panel.active { display: grid; }
     .iu-help { color: var(--kibana-text-muted); font-size: 12px; line-height: 1.6; margin: 0 0 18px; }
     .iu-dropzone { border: 1px dashed var(--kibana-text-muted); border-radius: 8px; padding: 34px 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
     .iu-dropzone:hover, .iu-dropzone.dragover { border-color: var(--kibana-accent); background: rgba(54,162,239,.08); }
@@ -39,16 +46,23 @@ block content
     .iu-status.err { background: rgba(255,107,107,.12); border: 1px solid rgba(255,107,107,.3); color: var(--kibana-error); }
     .iu-results { margin-top: 20px; overflow-x: auto; }
     .iu-results > .iu-card { padding: 0; border: 0; }
-    .iu-results table { border-collapse: collapse; min-width: 760px; width: 100%; }
-    .iu-results th, .iu-results td { border-bottom: 1px solid var(--kibana-border); padding: 10px; text-align: left; vertical-align: top; }
-    .iu-results th { color: var(--kibana-text-muted); font-size: 10px; text-transform: uppercase; }
-    .iu-results td { font-size: 12px; }
-    .iu-results a { color: var(--kibana-accent); }
+    .iu-results table, .iu-log-items table { border-collapse: collapse; min-width: 760px; width: 100%; }
+    .iu-results th, .iu-results td, .iu-log-items th, .iu-log-items td { border-bottom: 1px solid var(--kibana-border); padding: 10px; text-align: left; vertical-align: top; }
+    .iu-results th, .iu-log-items th { color: var(--kibana-text-muted); font-size: 10px; text-transform: uppercase; }
+    .iu-results td, .iu-log-items td { font-size: 12px; }
+    .iu-results a, .iu-log-items a { color: var(--kibana-accent); }
     .iu-badge { border-radius: 4px; display: inline-block; font-size: 10px; padding: 3px 6px; text-transform: uppercase; }
     .iu-badge.uploaded { background: rgba(125,226,209,.14); color: var(--kibana-success); }
     .iu-badge.duplicate-skipped { background: rgba(245,166,35,.14); color: var(--kibana-warning); }
     .iu-badge.failed { background: rgba(255,107,107,.14); color: var(--kibana-error); }
-    @media (max-width: 760px) { .iu-grid { grid-template-columns: 1fr; } .iu-wrap { padding: 28px 16px 48px; } }
+    .iu-log-list { display: grid; gap: 12px; }
+    .iu-log-summary { align-items: center; cursor: pointer; display: grid; gap: 12px; grid-template-columns: minmax(170px, 1fr) 90px 90px 90px; list-style: none; }
+    .iu-log-summary::-webkit-details-marker { display: none; }
+    .iu-log-id { color: var(--kibana-accent); font-family: 'JetBrains Mono', monospace; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+    .iu-log-stat { color: var(--kibana-text-muted); font-size: 11px; }
+    .iu-log-items { margin-top: 16px; overflow-x: auto; }
+    .iu-log-empty { color: var(--kibana-text-muted); padding: 32px; text-align: center; }
+    @media (max-width: 760px) { .iu-grid { grid-template-columns: 1fr; } .iu-wrap { padding: 28px 16px 48px; } .iu-log-summary { grid-template-columns: 1fr 1fr; } }
 
   .cf-header
     .brand
@@ -68,7 +82,11 @@ block content
     h1.iu-title Bulk image upload
     p.iu-subtitle Upload unit images, look up matching product details, publish each image to Contentful, and download the resulting asset URLs as a CSV file.
 
-    .iu-grid
+    .iu-tabs(role="tablist" aria-label="Image upload utility sections")
+      button.iu-tab.active#utilityTab(type="button" role="tab" aria-selected="true" aria-controls="utilityPanel") Utility
+      button.iu-tab#logsTab(type="button" role="tab" aria-selected="false" aria-controls="logsPanel") Logs
+
+    .iu-grid.iu-tab-panel.active#utilityPanel(role="tabpanel" aria-labelledby="utilityTab")
       .iu-card
         h2.iu-card-title Choose images
         p.iu-help Unit names are read from the filename without its extension, and underscores are converted to slashes. For example, #[code CHLB_17_1701.jpg] looks up unit #[code CHLB/17/1701]. Select up to 100 images, each up to 20 MB. Images are sent automatically in batches of five.
@@ -113,6 +131,13 @@ block content
             i.fas.fa-file-csv
             span Download unit names and asset URLs
 
+    #logsPanel.iu-tab-panel(role="tabpanel" aria-labelledby="logsTab" hidden)
+      .iu-card
+        h2.iu-card-title Upload transactions
+        p.iu-help One MongoDB log record is created for each click on Start upload, regardless of whether it contains 10, 20, or 100 images.
+        #uploadLogs.iu-log-list
+          .iu-log-empty Select the Logs tab to load recent transactions.
+
   script.
     (function () {
       var input = document.getElementById('images');
@@ -123,6 +148,11 @@ block content
       var clearButton = document.getElementById('clearButton');
       var status = document.getElementById('uploadStatus');
       var results = document.getElementById('results');
+      var utilityTab = document.getElementById('utilityTab');
+      var logsTab = document.getElementById('logsTab');
+      var utilityPanel = document.getElementById('utilityPanel');
+      var logsPanel = document.getElementById('logsPanel');
+      var uploadLogs = document.getElementById('uploadLogs');
       var selectedFiles = [];
       var isUploading = false;
       var MAX_FILES = 100;
@@ -158,6 +188,84 @@ block content
 
       function escapeHtml(value) {
         return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]; });
+      }
+
+      function safeAssetUrl(value) {
+        try {
+          var url = new URL(String(value || ''));
+          return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '';
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function createTransactionId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+        return 'upload-' + Date.now() + '-' + Math.random().toString(36).slice(2, 14);
+      }
+
+      async function finalizeTransaction(transactionId, items) {
+        var logItems = items.map(function (item) {
+          return {
+            unitName: String(item.unitName || '').slice(0, 200),
+            assetUrl: String(item.assetUrl || '').slice(0, 2000),
+            uploadSuccess: item.uploadSuccess === true,
+            ctUpdateSuccess: item.ctUpdateSuccess === true,
+            status: String(item.status || 'failed').slice(0, 60),
+            error: String(item.error || '').slice(0, 300)
+          };
+        });
+        var response = await fetch('/utility/image-upload/complete', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transactionId: transactionId, items: logItems })
+        });
+        var data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to save transaction log');
+        return data;
+      }
+
+      function setActiveTab(tabName) {
+        var showLogs = tabName === 'logs';
+        utilityTab.classList.toggle('active', !showLogs);
+        logsTab.classList.toggle('active', showLogs);
+        utilityTab.setAttribute('aria-selected', String(!showLogs));
+        logsTab.setAttribute('aria-selected', String(showLogs));
+        utilityPanel.classList.toggle('active', !showLogs);
+        logsPanel.classList.toggle('active', showLogs);
+        utilityPanel.hidden = showLogs;
+        logsPanel.hidden = !showLogs;
+      }
+
+      function renderUploadLogs(logs) {
+        if (!logs.length) {
+          uploadLogs.innerHTML = '<div class="iu-log-empty">No image upload transactions found.</div>';
+          return;
+        }
+        uploadLogs.innerHTML = logs.map(function (log) {
+          var metadata = log.metadata || {};
+          var items = Array.isArray(metadata.items) ? metadata.items : [];
+          var rows = items.map(function (item) {
+            var url = safeAssetUrl(item.assetUrl);
+            var link = url ? '<a href="' + escapeHtml(url) + '" target="_blank" rel="noreferrer">Open asset</a>' : '';
+            return '<tr><td>' + escapeHtml(item.unitName) + '</td><td>' + link + '</td><td>' + (item.uploadSuccess ? 'Success' : 'Failure') + '</td><td>' + (item.ctUpdateSuccess ? 'Success' : 'Failure') + '</td><td>' + escapeHtml(item.error) + '</td></tr>';
+          }).join('');
+          var timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
+          return '<details class="iu-card"><summary class="iu-log-summary"><span><span class="iu-log-id">' + escapeHtml(metadata.transactionId) + '</span><br><span class="iu-log-stat">' + escapeHtml(timestamp) + ' · ' + escapeHtml(metadata.username) + '</span></span><span class="iu-log-stat">' + escapeHtml(metadata.totalImages) + ' images</span><span class="iu-log-stat">' + escapeHtml(metadata.successfulUploads) + ' uploaded</span><span class="iu-log-stat">' + escapeHtml(metadata.successfulCtUpdates) + ' CT updated</span></summary><div class="iu-log-items"><table><thead><tr><th>Unit</th><th>Asset URL</th><th>Upload</th><th>CT update</th><th>Error</th></tr></thead><tbody>' + rows + '</tbody></table></div></details>';
+        }).join('');
+      }
+
+      async function loadUploadLogs() {
+        uploadLogs.innerHTML = '<div class="iu-log-empty"><i class="fas fa-circle-notch fa-spin me-2"></i>Loading transactions…</div>';
+        try {
+          var response = await fetch('/logs/image-upload-transactions?limit=50', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+          var data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Failed to load logs');
+          renderUploadLogs(data.logs || []);
+        } catch (error) {
+          uploadLogs.innerHTML = '<div class="iu-log-empty">' + escapeHtml(error.message || 'Failed to load logs') + '</div>';
+        }
       }
 
       function csvEscape(value) {
@@ -209,6 +317,8 @@ block content
       }
 
       input.addEventListener('change', function () { selectedFiles = []; addFiles(input.files); });
+      utilityTab.addEventListener('click', function () { setActiveTab('utility'); });
+      logsTab.addEventListener('click', function () { setActiveTab('logs'); loadUploadLogs(); });
       clearButton.addEventListener('click', function () { selectedFiles = []; input.value = ''; results.innerHTML = ''; status.className = 'iu-status'; renderFiles(); });
       ['dragenter', 'dragover'].forEach(function (eventName) { dropzone.addEventListener(eventName, function (event) { event.preventDefault(); dropzone.classList.add('dragover'); }); });
       ['dragleave', 'drop'].forEach(function (eventName) { dropzone.addEventListener(eventName, function (event) { event.preventDefault(); dropzone.classList.remove('dragover'); }); });
@@ -216,6 +326,7 @@ block content
       form.addEventListener('submit', async function (event) {
         event.preventDefault();
         if (!selectedFiles.length || isUploading) return;
+        var transactionId = createTransactionId();
         isUploading = true;
         input.disabled = true;
         uploadButton.disabled = true;
@@ -261,7 +372,12 @@ block content
           var allResults = batchResults.reduce(function (all, batch) { return all.concat(batch || []); }, []);
           var failedCount = allResults.filter(function (item) { return item.status === 'failed'; }).length;
           renderResults({ results: allResults, csv: createCsv(allResults) });
-          showStatus('Finished: ' + (allResults.length - failedCount) + ' completed, ' + failedCount + ' failed.', failedCount === 0);
+          try {
+            await finalizeTransaction(transactionId, allResults);
+            showStatus('Finished: ' + (allResults.length - failedCount) + ' completed, ' + failedCount + ' failed. Transaction ' + transactionId + ' was logged.', failedCount === 0);
+          } catch (logError) {
+            showStatus('Uploads finished, but the transaction log could not be saved: ' + (logError.message || 'Unknown logging error'), false);
+          }
         } catch (error) {
           showStatus(error.message || 'Upload failed', false);
         } finally {

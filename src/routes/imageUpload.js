@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const contentfulManagement = require('contentful-management');
+const { WinstonLoggerAdapter } = require('../infrastructure/WinstonLoggerAdapter');
 
 const router = express.Router();
 
@@ -20,6 +21,56 @@ const upload = multer({
 
 const COMMERCETOOLS_AUTH_API = 'https://auth.europe-west1.gcp.commercetools.com/oauth/token';
 const COMMERCETOOLS_API = 'https://api.europe-west1.gcp.com';
+const MAX_TRANSACTION_ITEMS = 100;
+const IMAGE_UPLOAD_LOG_COLLECTION = process.env.IMAGE_UPLOAD_LOG_COLLECTION || 'image_upload_transactions';
+const finalizedTransactions = new Map();
+
+function mongoLogConnectionString() {
+  const source = process.env.MONGODB_URL || 'mongodb://localhost:27017';
+  const database = process.env.DB_NAME || 'winston_logs';
+  const queryIndex = source.indexOf('?');
+  const query = queryIndex >= 0 ? source.slice(queryIndex) : '';
+  const base = queryIndex >= 0 ? source.slice(0, queryIndex) : source;
+  const match = base.match(/^(mongodb(?:\+srv)?:\/\/[^/]+)(?:\/.*)?$/i);
+  return match ? `${match[1]}/${encodeURIComponent(database)}${query}` : source;
+}
+
+const uploadLogger = WinstonLoggerAdapter.fromConfiguration({
+  name: 'image-upload-transactions',
+  level: 'info',
+  defaultMetadata: { service: 'image-upload-utility' },
+  transports: [{
+    type: 'mongodb',
+    level: 'info',
+    options: {
+      connectionString: mongoLogConnectionString(),
+      collection: IMAGE_UPLOAD_LOG_COLLECTION,
+      tryReconnect: true,
+    },
+  }],
+  silent: false,
+  exitOnError: false,
+  handleExceptions: false,
+  handleRejections: false,
+});
+
+function writeTransactionLog(metadata) {
+  return new Promise((resolve, reject) => {
+    uploadLogger.winston.write({
+      level: 'info',
+      message: 'Image upload transaction completed',
+      ...uploadLogger.buildLogData(metadata),
+    }, error => error ? reject(error) : resolve());
+  });
+}
+
+function rememberFinalizedTransaction(transactionId) {
+  finalizedTransactions.set(transactionId, Date.now());
+  if (finalizedTransactions.size > 1000) {
+    const oldest = finalizedTransactions.keys().next().value;
+    finalizedTransactions.delete(oldest);
+  }
+}
 
 function getConfig() {
   const config = {
@@ -254,6 +305,8 @@ async function uploadAsset(file, unitName, product, config, client) {
       buildingCode: product.buildingCode,
       floorNumber: product.floorNumber,
       status: 'duplicate-skipped',
+      uploadSuccess: true,
+      ctUpdateSuccess: false,
       error: '',
     };
   }
@@ -290,6 +343,8 @@ async function uploadAsset(file, unitName, product, config, client) {
     buildingCode: product.buildingCode,
     floorNumber: product.floorNumber,
     status: 'uploaded',
+    uploadSuccess: true,
+    ctUpdateSuccess: false,
     error: '',
   };
 }
@@ -298,6 +353,51 @@ router.get('/', (req, res) => {
   res.render('image-upload', {
     title: 'Image Upload Utility - Logger Dashboard',
   });
+});
+
+router.post('/complete', async (req, res) => {
+  try {
+    const transactionId = String(req.body?.transactionId || '').trim();
+    const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    if (!/^[a-zA-Z0-9-]{16,80}$/.test(transactionId)) {
+      return res.status(400).json({ error: 'A valid transaction ID is required' });
+    }
+    if (!items.length || items.length > MAX_TRANSACTION_ITEMS) {
+      return res.status(400).json({ error: `Transaction items must contain between 1 and ${MAX_TRANSACTION_ITEMS} records` });
+    }
+    if (finalizedTransactions.has(transactionId)) {
+      return res.json({ transactionId, logged: true, duplicate: true });
+    }
+
+    const logItems = items.map(item => ({
+      unitName: String(item?.unitName || '').slice(0, 200),
+      assetUrl: String(item?.assetUrl || '').slice(0, 2000),
+      uploadSuccess: item?.uploadSuccess === true,
+      ctUpdateSuccess: item?.ctUpdateSuccess === true,
+      status: String(item?.status || 'failed').slice(0, 60),
+      error: String(item?.error || '').slice(0, 1000),
+    }));
+    const successfulUploads = logItems.filter(item => item.uploadSuccess).length;
+    const successfulCtUpdates = logItems.filter(item => item.ctUpdateSuccess).length;
+
+    await writeTransactionLog({
+      event: 'image_upload_transaction',
+      transactionId,
+      username: String(req.session?.username || 'unknown').slice(0, 100),
+      totalImages: logItems.length,
+      successfulUploads,
+      failedUploads: logItems.length - successfulUploads,
+      successfulCtUpdates,
+      failedCtUpdates: logItems.length - successfulCtUpdates,
+      success: successfulUploads === logItems.length && successfulCtUpdates === logItems.length,
+      items: logItems,
+    });
+    rememberFinalizedTransaction(transactionId);
+    return res.status(201).json({ transactionId, logged: true });
+  } catch (error) {
+    console.error('Failed to write image upload transaction log:', error);
+    return res.status(500).json({ error: 'Failed to save the upload transaction log' });
+  }
 });
 
 router.post('/upload', (req, res) => {
@@ -320,12 +420,12 @@ router.post('/upload', (req, res) => {
           const result = await uploadAsset(file, unitName, product, config, contentfulClient);
           try {
             await updateFloorPlan(token, product, result.assetUrl, config);
-            results.push(result);
+            results.push({ ...result, ctUpdateSuccess: true });
           } catch (error) {
-            results.push({ ...result, status: 'failed', error: error.message });
+            results.push({ ...result, ctUpdateSuccess: false, status: 'failed', error: error.message });
           }
         } catch (error) {
-          results.push({ unitName, assetUrl: '', productId: '', projectName: '', buildingCode: '', floorNumber: '', status: 'failed', error: error.message });
+          results.push({ unitName, assetUrl: '', productId: '', projectName: '', buildingCode: '', floorNumber: '', status: 'failed', uploadSuccess: false, ctUpdateSuccess: false, error: error.message });
         }
       }
       return res.json({ results, csv: toCsv(results) });

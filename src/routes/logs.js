@@ -8,6 +8,7 @@ const router = express.Router();
 const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://localhost:27017';
 const DB_NAME = process.env.DB_NAME || 'winston_logs';
 const COLLECTION_NAME = process.env.COLLECTION_NAME || 'logs';
+const IMAGE_UPLOAD_LOG_COLLECTION = process.env.IMAGE_UPLOAD_LOG_COLLECTION || 'image_upload_transactions';
 
 let db = null;
 
@@ -31,6 +32,10 @@ async function initializeDatabase() {
     );
     await collection.createIndex({ timestamp: -1 });
 
+    const imageUploadCollection = db.collection(IMAGE_UPLOAD_LOG_COLLECTION);
+    await imageUploadCollection.createIndex({ 'metadata.transactionId': 1 }, { unique: true });
+    await imageUploadCollection.createIndex({ timestamp: -1 });
+
     console.log('Connected to MongoDB with indexes created');
   } catch (error) {
     console.error('Failed to connect to MongoDB:', error);
@@ -39,6 +44,25 @@ async function initializeDatabase() {
 
 // Initialize database connection
 initializeDatabase();
+
+// JSON endpoint for the Image Upload Utility Logs tab.
+router.get('/image-upload-transactions', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database connection not available' });
+    const requestedLimit = Number.parseInt(req.query.limit, 10);
+    const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 100) : 50;
+    const logs = await db.collection(IMAGE_UPLOAD_LOG_COLLECTION)
+      .find({ 'metadata.event': 'image_upload_transaction' })
+      .sort({ timestamp: -1 })
+      .limit(limit)
+      .project({ timestamp: 1, level: 1, message: 1, metadata: 1 })
+      .toArray();
+    return res.json({ logs });
+  } catch (error) {
+    console.error('Failed to retrieve image upload transaction logs:', error);
+    return res.status(500).json({ error: 'Failed to retrieve upload transaction logs' });
+  }
+});
 
 // GET /logs - Display logs with search functionality
 router.get('/', async (req, res) => {

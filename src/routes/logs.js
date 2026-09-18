@@ -51,13 +51,21 @@ router.get('/image-upload-transactions', async (req, res) => {
     if (!db) return res.status(503).json({ error: 'Database connection not available' });
     const requestedLimit = Number.parseInt(req.query.limit, 10);
     const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 100) : 50;
-    const logs = await db.collection(IMAGE_UPLOAD_LOG_COLLECTION)
-      .find({ 'metadata.event': 'image_upload_transaction' })
+    const search = String(req.query.search || '').trim().slice(0, 80);
+    const query = { 'metadata.event': 'image_upload_transaction' };
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query['metadata.transactionId'] = { $regex: `^${escapedSearch}`, $options: 'i' };
+    }
+    const collection = db.collection(IMAGE_UPLOAD_LOG_COLLECTION);
+    const totalCount = await collection.countDocuments(query);
+    const logs = await collection
+      .find(query)
       .sort({ timestamp: -1 })
       .limit(limit)
       .project({ timestamp: 1, level: 1, message: 1, metadata: 1 })
       .toArray();
-    return res.json({ logs });
+    return res.json({ logs, totalCount, search });
   } catch (error) {
     console.error('Failed to retrieve image upload transaction logs:', error);
     return res.status(500).json({ error: 'Failed to retrieve upload transaction logs' });

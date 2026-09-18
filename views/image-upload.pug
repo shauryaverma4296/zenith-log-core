@@ -30,6 +30,10 @@ block content
     .iu-dropzone span { color: var(--kibana-text-muted); font-size: 12px; }
     .iu-file-input { display: none; }
     .iu-file-list { display: grid; gap: 8px; margin: 18px 0 0; }
+    .iu-selection-summary { align-items: center; background: var(--kibana-bg); border: 1px solid var(--kibana-border); border-radius: 6px; display: flex; gap: 10px; padding: 12px; }
+    .iu-selection-summary i { color: var(--kibana-accent); }
+    .iu-selection-summary strong { font-size: 13px; }
+    .iu-selection-summary span { color: var(--kibana-text-muted); font-size: 11px; margin-left: auto; }
     .iu-file { align-items: center; background: var(--kibana-bg); border: 1px solid var(--kibana-border); border-radius: 6px; display: flex; gap: 10px; justify-content: space-between; padding: 10px 12px; }
     .iu-file-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .iu-file-size { color: var(--kibana-text-muted); flex: 0 0 auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
@@ -55,14 +59,10 @@ block content
     .iu-badge.uploaded { background: rgba(125,226,209,.14); color: var(--kibana-success); }
     .iu-badge.duplicate-skipped { background: rgba(245,166,35,.14); color: var(--kibana-warning); }
     .iu-badge.failed { background: rgba(255,107,107,.14); color: var(--kibana-error); }
-    .iu-log-list { display: grid; gap: 12px; }
-    .iu-log-summary { align-items: center; cursor: pointer; display: grid; gap: 12px; grid-template-columns: minmax(170px, 1fr) 90px 90px 90px; list-style: none; }
-    .iu-log-summary::-webkit-details-marker { display: none; }
-    .iu-log-id { color: var(--kibana-accent); font-family: 'JetBrains Mono', monospace; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
-    .iu-log-stat { color: var(--kibana-text-muted); font-size: 11px; }
+    .iu-log-id { color: var(--kibana-accent); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
     .iu-log-items { margin-top: 16px; overflow-x: auto; }
     .iu-log-empty { color: var(--kibana-text-muted); padding: 32px; text-align: center; }
-    @media (max-width: 760px) { .iu-grid { grid-template-columns: 1fr; } .iu-wrap { padding: 28px 16px 48px; } .iu-log-summary { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 760px) { .iu-grid { grid-template-columns: 1fr; } .iu-wrap { padding: 28px 16px 48px; } }
 
   .cf-header
     .brand
@@ -132,11 +132,27 @@ block content
             span Download unit names and asset URLs
 
     #logsPanel.iu-tab-panel(role="tabpanel" aria-labelledby="logsTab" hidden)
-      .iu-card
-        h2.iu-card-title Upload transactions
-        p.iu-help One MongoDB log record is created for each click on Start upload, regardless of whether it contains 10, 20, or 100 images.
-        #uploadLogs.iu-log-list
-          .iu-log-empty Select the Logs tab to load recent transactions.
+      form#uploadLogSearchForm.search-bar
+        .search-input-wrapper
+          i.fas.fa-search.search-icon
+          input#uploadLogSearch.search-input(type="search" placeholder="Search by transaction ID" autocomplete="off")
+        button.btn-kibana(type="submit")
+          i.fas.fa-search.me-2
+          | Search
+        button.btn-kibana-secondary#clearUploadLogSearch(type="button" hidden)
+          i.fas.fa-times.me-2
+          | Clear
+      .results-header
+        .results-count#uploadLogResultsCount Showing upload transactions
+        .results-count
+          span.timezone-indicator
+            i.fas.fa-clock
+            span#uploadLogTimezone
+          span.mx-2 |
+          span Updated:
+          strong#uploadLogLastUpdated.ms-1 —
+      .logs-table-container#uploadLogs
+        .iu-log-empty Select the Logs tab to load recent transactions.
 
   script.
     (function () {
@@ -153,6 +169,12 @@ block content
       var utilityPanel = document.getElementById('utilityPanel');
       var logsPanel = document.getElementById('logsPanel');
       var uploadLogs = document.getElementById('uploadLogs');
+      var uploadLogSearchForm = document.getElementById('uploadLogSearchForm');
+      var uploadLogSearch = document.getElementById('uploadLogSearch');
+      var clearUploadLogSearch = document.getElementById('clearUploadLogSearch');
+      var uploadLogResultsCount = document.getElementById('uploadLogResultsCount');
+      var uploadLogLastUpdated = document.getElementById('uploadLogLastUpdated');
+      var uploadLogTimezone = document.getElementById('uploadLogTimezone');
       var selectedFiles = [];
       var isUploading = false;
       var MAX_FILES = 100;
@@ -167,9 +189,8 @@ block content
       }
 
       function renderFiles() {
-        fileList.innerHTML = selectedFiles.map(function (file) {
-          return '<div class="iu-file"><span class="iu-file-name"><i class="fas fa-image me-2"></i>' + file.name.replace(/[<>&"]/g, '') + '</span><span class="iu-file-size">' + formatBytes(file.size) + '</span></div>';
-        }).join('');
+        var totalSize = selectedFiles.reduce(function (sum, file) { return sum + file.size; }, 0);
+        fileList.innerHTML = selectedFiles.length ? '<div class="iu-selection-summary"><i class="fas fa-images"></i><strong>' + selectedFiles.length + ' image' + (selectedFiles.length === 1 ? '' : 's') + ' selected</strong><span>' + formatBytes(totalSize) + ' total</span></div>' : '';
         uploadButton.disabled = selectedFiles.length === 0;
         clearButton.disabled = selectedFiles.length === 0;
       }
@@ -238,12 +259,22 @@ block content
         logsPanel.hidden = !showLogs;
       }
 
-      function renderUploadLogs(logs) {
+      function toggleUploadLogRow(index) {
+        var row = uploadLogs.querySelector('.log-row[data-upload-log-index="' + index + '"]');
+        var detail = uploadLogs.querySelector('.log-details[data-upload-log-detail="' + index + '"]');
+        if (!row || !detail) return;
+        row.classList.toggle('expanded');
+        detail.classList.toggle('show');
+      }
+
+      function renderUploadLogs(logs, totalCount, search) {
+        uploadLogResultsCount.innerHTML = search ? 'Found <strong>' + totalCount + '</strong> result' + (totalCount === 1 ? '' : 's') + ' for “' + escapeHtml(search) + '”' : 'Showing <strong>' + logs.length + '</strong> upload transaction' + (logs.length === 1 ? '' : 's');
+        uploadLogLastUpdated.textContent = new Date().toLocaleTimeString();
         if (!logs.length) {
           uploadLogs.innerHTML = '<div class="iu-log-empty">No image upload transactions found.</div>';
           return;
         }
-        uploadLogs.innerHTML = logs.map(function (log) {
+        var body = logs.map(function (log, index) {
           var metadata = log.metadata || {};
           var items = Array.isArray(metadata.items) ? metadata.items : [];
           var rows = items.map(function (item) {
@@ -252,17 +283,26 @@ block content
             return '<tr><td>' + escapeHtml(item.unitName) + '</td><td>' + link + '</td><td>' + (item.uploadSuccess ? 'Success' : 'Failure') + '</td><td>' + (item.ctUpdateSuccess ? 'Success' : 'Failure') + '</td><td>' + escapeHtml(item.error) + '</td></tr>';
           }).join('');
           var timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
-          return '<details class="iu-card"><summary class="iu-log-summary"><span><span class="iu-log-id">' + escapeHtml(metadata.transactionId) + '</span><br><span class="iu-log-stat">' + escapeHtml(timestamp) + ' · ' + escapeHtml(metadata.username) + '</span></span><span class="iu-log-stat">' + escapeHtml(metadata.totalImages) + ' images</span><span class="iu-log-stat">' + escapeHtml(metadata.successfulUploads) + ' uploaded</span><span class="iu-log-stat">' + escapeHtml(metadata.successfulCtUpdates) + ' CT updated</span></summary><div class="iu-log-items"><table><thead><tr><th>Unit</th><th>Asset URL</th><th>Upload</th><th>CT update</th><th>Error</th></tr></thead><tbody>' + rows + '</tbody></table></div></details>';
+          var statusLabel = metadata.success ? 'SUCCESS' : 'FAILED';
+          var statusClass = metadata.success ? 'log-level-info' : 'log-level-error';
+          return '<tr class="log-row" data-upload-log-index="' + index + '"><td class="expand-icon"><i class="fas fa-chevron-right"></i></td><td>' + escapeHtml(timestamp) + '</td><td><span class="log-level ' + statusClass + '">' + statusLabel + '</span></td><td>image_upload_transaction</td><td>' + escapeHtml(log.message) + '</td><td class="iu-log-id" title="' + escapeHtml(metadata.transactionId) + '">' + escapeHtml(metadata.transactionId) + '</td><td>' + escapeHtml(metadata.totalImages) + '</td></tr><tr class="log-details" data-upload-log-detail="' + index + '"><td colspan="7"><div class="log-details-content"><div class="field-row"><div class="field-name">User</div><div class="field-value">' + escapeHtml(metadata.username) + '</div></div><div class="field-row"><div class="field-name">Uploaded</div><div class="field-value">' + escapeHtml(metadata.successfulUploads) + ' / ' + escapeHtml(metadata.totalImages) + '</div></div><div class="field-row"><div class="field-name">CT updated</div><div class="field-value">' + escapeHtml(metadata.successfulCtUpdates) + ' / ' + escapeHtml(metadata.totalImages) + '</div></div><div class="iu-log-items"><table><thead><tr><th>Unit</th><th>Asset URL</th><th>Upload</th><th>CT update</th><th>Error</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></td></tr>';
         }).join('');
+        uploadLogs.innerHTML = '<table class="log-table"><thead><tr><th style="width:30px"></th><th>Timestamp</th><th>Status</th><th>Event</th><th>Message</th><th>Transaction ID</th><th>Images</th></tr></thead><tbody>' + body + '</tbody></table>';
+        uploadLogs.querySelectorAll('.log-row[data-upload-log-index]').forEach(function (row) {
+          row.addEventListener('click', function () { toggleUploadLogRow(row.getAttribute('data-upload-log-index')); });
+        });
       }
 
-      async function loadUploadLogs() {
+      async function loadUploadLogs(search) {
         uploadLogs.innerHTML = '<div class="iu-log-empty"><i class="fas fa-circle-notch fa-spin me-2"></i>Loading transactions…</div>';
         try {
-          var response = await fetch('/logs/image-upload-transactions?limit=50', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+          var params = new URLSearchParams({ limit: '50' });
+          if (search) params.set('search', search);
+          var response = await fetch('/logs/image-upload-transactions?' + params.toString(), { credentials: 'same-origin', headers: { Accept: 'application/json' } });
           var data = await response.json();
           if (!response.ok) throw new Error(data.error || 'Failed to load logs');
-          renderUploadLogs(data.logs || []);
+          clearUploadLogSearch.hidden = !search;
+          renderUploadLogs(data.logs || [], data.totalCount || 0, data.search || '');
         } catch (error) {
           uploadLogs.innerHTML = '<div class="iu-log-empty">' + escapeHtml(error.message || 'Failed to load logs') + '</div>';
         }
@@ -319,6 +359,16 @@ block content
       input.addEventListener('change', function () { selectedFiles = []; addFiles(input.files); });
       utilityTab.addEventListener('click', function () { setActiveTab('utility'); });
       logsTab.addEventListener('click', function () { setActiveTab('logs'); loadUploadLogs(); });
+      uploadLogSearchForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        loadUploadLogs(uploadLogSearch.value.trim());
+      });
+      clearUploadLogSearch.addEventListener('click', function () {
+        uploadLogSearch.value = '';
+        loadUploadLogs('');
+        uploadLogSearch.focus();
+      });
+      uploadLogTimezone.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
       clearButton.addEventListener('click', function () { selectedFiles = []; input.value = ''; results.innerHTML = ''; status.className = 'iu-status'; renderFiles(); });
       ['dragenter', 'dragover'].forEach(function (eventName) { dropzone.addEventListener(eventName, function (event) { event.preventDefault(); dropzone.classList.add('dragover'); }); });
       ['dragleave', 'drop'].forEach(function (eventName) { dropzone.addEventListener(eventName, function (event) { event.preventDefault(); dropzone.classList.remove('dragover'); }); });

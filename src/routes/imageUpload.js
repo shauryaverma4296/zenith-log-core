@@ -7,7 +7,7 @@ const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    files: 10,
+    files: 5,
     fileSize: 20 * 1024 * 1024,
   },
   fileFilter: (req, file, callback) => {
@@ -301,7 +301,7 @@ router.get('/', (req, res) => {
 });
 
 router.post('/upload', (req, res) => {
-  upload.array('images', 10)(req, res, async (uploadError) => {
+  upload.array('images', 5)(req, res, async (uploadError) => {
     if (uploadError) {
       return res.status(400).json({ error: uploadError.message });
     }

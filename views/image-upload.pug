@@ -71,7 +71,7 @@ block content
     .iu-grid
       .iu-card
         h2.iu-card-title Choose images
-        p.iu-help Unit names are read from the filename without its extension, and underscores are converted to slashes. For example, #[code CHLB_17_1701.jpg] looks up unit #[code CHLB/17/1701]. Upload up to 10 images, each up to 20 MB.
+        p.iu-help Unit names are read from the filename without its extension, and underscores are converted to slashes. For example, #[code CHLB_17_1701.jpg] looks up unit #[code CHLB/17/1701]. Select up to 100 images, each up to 20 MB. Images are sent automatically in batches of five.
         form#imageUploadForm(enctype="multipart/form-data")
           label.iu-dropzone#dropzone(for="images")
             i.fas.fa-cloud-upload-alt
@@ -124,6 +124,10 @@ block content
       var status = document.getElementById('uploadStatus');
       var results = document.getElementById('results');
       var selectedFiles = [];
+      var isUploading = false;
+      var MAX_FILES = 100;
+      var BATCH_SIZE = 5;
+      var CONCURRENT_BATCHES = 2;
 
       function formatBytes(bytes) {
         if (!bytes) return '0 B';
@@ -141,8 +145,9 @@ block content
       }
 
       function addFiles(files) {
+        if (isUploading) return;
         var next = Array.prototype.slice.call(files).filter(function (file) { return file.type.indexOf('image/') === 0; });
-        selectedFiles = selectedFiles.concat(next).slice(0, 10);
+        selectedFiles = selectedFiles.concat(next).slice(0, MAX_FILES);
         renderFiles();
       }
 
@@ -153,6 +158,38 @@ block content
 
       function escapeHtml(value) {
         return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]; });
+      }
+
+      function csvEscape(value) {
+        var text = String(value == null ? '' : value);
+        return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+      }
+
+      function createCsv(items) {
+        var rows = [['Unit Name', 'Contentful Asset URL', 'Product ID', 'Project Name', 'Building Code', 'Floor Number', 'Status', 'Error']];
+        items.forEach(function (item) {
+          rows.push([item.unitName, item.assetUrl, item.productId, item.projectName, item.buildingCode, item.floorNumber, item.status, item.error]);
+        });
+        return rows.map(function (row) { return row.map(csvEscape).join(','); }).join('\n');
+      }
+
+      function unitFromFilename(filename) {
+        return filename.replace(/\.[^/.]+$/, '').trim().replace(/_+/g, '/');
+      }
+
+      function failedBatchResults(batch, message) {
+        return batch.map(function (file) {
+          return { unitName: unitFromFilename(file.name), assetUrl: '', productId: '', projectName: '', buildingCode: '', floorNumber: '', status: 'failed', error: message };
+        });
+      }
+
+      async function uploadBatch(batch) {
+        var body = new FormData();
+        batch.forEach(function (file) { body.append('images', file); });
+        var response = await fetch('/utility/image-upload/upload', { method: 'POST', body: body, credentials: 'same-origin' });
+        var data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Batch upload failed');
+        return data.results;
       }
 
       function renderResults(data) {
@@ -178,21 +215,58 @@ block content
       dropzone.addEventListener('drop', function (event) { addFiles(event.dataTransfer.files); });
       form.addEventListener('submit', async function (event) {
         event.preventDefault();
-        var body = new FormData();
-        selectedFiles.forEach(function (file) { body.append('images', file); });
+        if (!selectedFiles.length || isUploading) return;
+        isUploading = true;
+        input.disabled = true;
         uploadButton.disabled = true;
         clearButton.disabled = true;
         uploadButton.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i>Processing...';
-        showStatus('Processing images through the upload workflow…', true);
+        results.innerHTML = '';
+
+        var batches = [];
+        for (var offset = 0; offset < selectedFiles.length; offset += BATCH_SIZE) {
+          batches.push(selectedFiles.slice(offset, offset + BATCH_SIZE));
+        }
+        var batchResults = new Array(batches.length);
+        var nextBatchIndex = 0;
+        var completedBatches = 0;
+        var processedFiles = 0;
+
+        function updateProgress() {
+          showStatus('Processed ' + processedFiles + ' of ' + selectedFiles.length + ' images · batch ' + completedBatches + ' of ' + batches.length, true);
+        }
+
+        async function worker() {
+          while (nextBatchIndex < batches.length) {
+            var batchIndex = nextBatchIndex++;
+            var batch = batches[batchIndex];
+            try {
+              batchResults[batchIndex] = await uploadBatch(batch);
+            } catch (error) {
+              batchResults[batchIndex] = failedBatchResults(batch, error.message || 'Batch upload failed');
+            }
+            processedFiles += batch.length;
+            completedBatches += 1;
+            updateProgress();
+          }
+        }
+
+        updateProgress();
         try {
-          var response = await fetch('/utility/image-upload/upload', { method: 'POST', body: body, credentials: 'same-origin' });
-          var data = await response.json();
-          if (!response.ok) throw new Error(data.error || 'Upload failed');
-          renderResults(data);
-          showStatus('Finished: ' + data.results.filter(function (item) { return item.status !== 'failed'; }).length + ' image(s) completed.', true);
+          var workers = [];
+          var workerCount = Math.min(CONCURRENT_BATCHES, batches.length);
+          for (var index = 0; index < workerCount; index += 1) workers.push(worker());
+          await Promise.all(workers);
+
+          var allResults = batchResults.reduce(function (all, batch) { return all.concat(batch || []); }, []);
+          var failedCount = allResults.filter(function (item) { return item.status === 'failed'; }).length;
+          renderResults({ results: allResults, csv: createCsv(allResults) });
+          showStatus('Finished: ' + (allResults.length - failedCount) + ' completed, ' + failedCount + ' failed.', failedCount === 0);
         } catch (error) {
           showStatus(error.message || 'Upload failed', false);
         } finally {
+          isUploading = false;
+          input.disabled = false;
           uploadButton.disabled = selectedFiles.length === 0;
           clearButton.disabled = selectedFiles.length === 0;
           uploadButton.innerHTML = '<i class="fas fa-upload me-2"></i>Start upload';

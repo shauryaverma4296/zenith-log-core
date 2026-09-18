@@ -8,22 +8,19 @@ block content
     .cf-header .actions { display: flex; align-items: center; gap: 8px; }
     .cf-back, .cf-logout { background: transparent; border: 1px solid var(--kibana-border); color: var(--kibana-text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
     .cf-back:hover, .cf-logout:hover { border-color: var(--kibana-accent); color: var(--kibana-accent); }
-    .iu-wrap { max-width: 1040px; margin: 0 auto; padding: 40px 24px 64px; }
-    .iu-eyebrow { color: var(--kibana-accent); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 8px; }
-    .iu-title { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
-    .iu-subtitle { color: var(--kibana-text-muted); margin: 0 0 28px; max-width: 720px; line-height: 1.6; }
-    .iu-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
-    .iu-card { background: var(--kibana-sidebar); border: 1px solid var(--kibana-border); border-radius: 10px; padding: 24px; }
+    .iu-wrap { margin: 0; max-width: none; padding: 0; width: 100%; }
+    .iu-grid { display: block; width: 100%; }
+    .iu-card { background: var(--kibana-sidebar); border: 0; border-bottom: 1px solid var(--kibana-border); border-radius: 0; padding: 24px; width: 100%; }
     .iu-card-title { font-size: 14px; font-weight: 700; margin: 0 0 6px; }
-    .iu-tabs { border-bottom: 1px solid var(--kibana-border); display: flex; gap: 4px; margin-bottom: 20px; }
+    .iu-tabs { border-bottom: 1px solid var(--kibana-border); display: flex; gap: 4px; margin: 0; }
     .iu-tab { background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--kibana-text-muted); cursor: pointer; font-size: 13px; font-weight: 600; padding: 10px 14px; }
     .iu-tab:hover { color: var(--kibana-text); }
     .iu-tab.active { border-bottom-color: var(--kibana-accent); color: var(--kibana-accent); }
     .iu-tab-panel { display: none; }
     .iu-tab-panel.active { display: block; }
-    .iu-grid.iu-tab-panel.active { display: grid; }
+    .iu-grid.iu-tab-panel.active { display: block; }
     .iu-help { color: var(--kibana-text-muted); font-size: 12px; line-height: 1.6; margin: 0 0 18px; }
-    .iu-dropzone { border: 1px dashed var(--kibana-text-muted); border-radius: 8px; padding: 34px 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
+    .iu-dropzone { border: 1px dashed var(--kibana-text-muted); border-radius: 8px; box-sizing: border-box; display: block; padding: 48px 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; width: 100%; }
     .iu-dropzone:hover, .iu-dropzone.dragover { border-color: var(--kibana-accent); background: rgba(54,162,239,.08); }
     .iu-dropzone i { color: var(--kibana-accent); font-size: 28px; margin-bottom: 12px; }
     .iu-dropzone strong { display: block; font-size: 14px; margin-bottom: 6px; }
@@ -60,9 +57,10 @@ block content
     .iu-badge.duplicate-skipped { background: rgba(245,166,35,.14); color: var(--kibana-warning); }
     .iu-badge.failed { background: rgba(255,107,107,.14); color: var(--kibana-error); }
     .iu-log-id { color: var(--kibana-accent); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-    .iu-log-items { margin-top: 16px; overflow-x: auto; }
+    .iu-log-items { margin-top: 16px; overflow-x: auto; width: 100%; }
     .iu-log-empty { color: var(--kibana-text-muted); padding: 32px; text-align: center; }
-    @media (max-width: 760px) { .iu-grid { grid-template-columns: 1fr; } .iu-wrap { padding: 28px 16px 48px; } }
+    #logsPanel { width: 100%; }
+    @media (max-width: 760px) { .iu-card { padding: 16px; } }
 
   .cf-header
     .brand
@@ -78,10 +76,6 @@ block content
           span Logout
 
   .iu-wrap
-    p.iu-eyebrow Image pipeline
-    h1.iu-title Bulk image upload
-    p.iu-subtitle Upload unit images, look up matching product details, publish each image to Contentful, and download the resulting asset URLs as a CSV file.
-
     .iu-tabs(role="tablist" aria-label="Image upload utility sections")
       button.iu-tab.active#utilityTab(type="button" role="tab" aria-selected="true" aria-controls="utilityPanel") Utility
       button.iu-tab#logsTab(type="button" role="tab" aria-selected="false" aria-controls="logsPanel") Logs
@@ -104,32 +98,6 @@ block content
               | Start upload
           #uploadStatus.iu-status
         #results
-
-      .iu-card
-        h2.iu-card-title Workflow
-        p.iu-help Each image follows the same server-side sequence.
-        ul.iu-steps
-          li.iu-step
-            i.fas.fa-key
-            span Authenticate with Commercetools
-          li.iu-step
-            i.fas.fa-search
-            span Find the product using the unit name
-          li.iu-step
-            i.fas.fa-tags
-            span Validate or create Contentful tags
-          li.iu-step
-            i.fas.fa-copy
-            span Skip matching assets already published
-          li.iu-step
-            i.fas.fa-cloud-upload-alt
-            span Upload, process, and publish the asset
-          li.iu-step
-            i.fas.fa-rotate
-            span Update the unit's floorPlan attribute in Commercetools
-          li.iu-step
-            i.fas.fa-file-csv
-            span Download unit names and asset URLs
 
     #logsPanel.iu-tab-panel(role="tabpanel" aria-labelledby="logsTab" hidden)
       form#uploadLogSearchForm.search-bar
@@ -180,6 +148,9 @@ block content
       var MAX_FILES = 100;
       var BATCH_SIZE = 5;
       var CONCURRENT_BATCHES = 2;
+      var LOG_ITEMS_PER_PAGE = 20;
+      var uploadLogData = [];
+      var uploadLogItemPages = {};
 
       function formatBytes(bytes) {
         if (!bytes) return '0 B';
@@ -263,11 +234,43 @@ block content
         var row = uploadLogs.querySelector('.log-row[data-upload-log-index="' + index + '"]');
         var detail = uploadLogs.querySelector('.log-details[data-upload-log-detail="' + index + '"]');
         if (!row || !detail) return;
+        var isOpening = !detail.classList.contains('show');
         row.classList.toggle('expanded');
         detail.classList.toggle('show');
+        if (isOpening) renderUploadLogItems(Number(index));
+      }
+
+      function renderUploadLogItems(index) {
+        var container = document.getElementById('uploadLogItems-' + index);
+        var log = uploadLogData[index] || {};
+        var metadata = log.metadata || {};
+        var items = Array.isArray(metadata.items) ? metadata.items : [];
+        if (!container) return;
+        if (!items.length) {
+          container.innerHTML = '<div class="iu-log-empty">No image details were recorded for this transaction.</div>';
+          return;
+        }
+        var pageCount = Math.ceil(items.length / LOG_ITEMS_PER_PAGE);
+        var page = Math.min(Math.max(uploadLogItemPages[index] || 1, 1), pageCount);
+        uploadLogItemPages[index] = page;
+        var start = (page - 1) * LOG_ITEMS_PER_PAGE;
+        var rows = items.slice(start, start + LOG_ITEMS_PER_PAGE).map(function (item) {
+          var url = safeAssetUrl(item.assetUrl);
+          var link = url ? '<a href="' + escapeHtml(url) + '" target="_blank" rel="noreferrer">Open asset</a>' : '';
+          return '<tr><td>' + escapeHtml(item.unitName) + '</td><td>' + link + '</td><td>' + (item.uploadSuccess ? 'Success' : 'Failure') + '</td><td>' + (item.ctUpdateSuccess ? 'Success' : 'Failure') + '</td><td>' + escapeHtml(item.error) + '</td></tr>';
+        }).join('');
+        container.innerHTML = '<table><thead><tr><th>Unit</th><th>Asset URL</th><th>Upload</th><th>CT update</th><th>Error</th></tr></thead><tbody>' + rows + '</tbody></table><div class="pagination-bar"><div class="page-info">Showing ' + (start + 1) + '–' + Math.min(start + LOG_ITEMS_PER_PAGE, items.length) + ' of ' + items.length + ' images</div><div class="page-buttons"><button class="page-btn" type="button" data-upload-log-page="previous"' + (page === 1 ? ' disabled' : '') + '><i class="fas fa-chevron-left"></i></button><span class="page-info">Page ' + page + ' of ' + pageCount + '</span><button class="page-btn" type="button" data-upload-log-page="next"' + (page === pageCount ? ' disabled' : '') + '><i class="fas fa-chevron-right"></i></button></div></div>';
+        container.querySelectorAll('[data-upload-log-page]').forEach(function (button) {
+          button.addEventListener('click', function () {
+            uploadLogItemPages[index] += button.getAttribute('data-upload-log-page') === 'next' ? 1 : -1;
+            renderUploadLogItems(index);
+          });
+        });
       }
 
       function renderUploadLogs(logs, totalCount, search) {
+        uploadLogData = logs;
+        uploadLogItemPages = {};
         uploadLogResultsCount.innerHTML = search ? 'Found <strong>' + totalCount + '</strong> result' + (totalCount === 1 ? '' : 's') + ' for “' + escapeHtml(search) + '”' : 'Showing <strong>' + logs.length + '</strong> upload transaction' + (logs.length === 1 ? '' : 's');
         uploadLogLastUpdated.textContent = new Date().toLocaleTimeString();
         if (!logs.length) {
@@ -276,16 +279,10 @@ block content
         }
         var body = logs.map(function (log, index) {
           var metadata = log.metadata || {};
-          var items = Array.isArray(metadata.items) ? metadata.items : [];
-          var rows = items.map(function (item) {
-            var url = safeAssetUrl(item.assetUrl);
-            var link = url ? '<a href="' + escapeHtml(url) + '" target="_blank" rel="noreferrer">Open asset</a>' : '';
-            return '<tr><td>' + escapeHtml(item.unitName) + '</td><td>' + link + '</td><td>' + (item.uploadSuccess ? 'Success' : 'Failure') + '</td><td>' + (item.ctUpdateSuccess ? 'Success' : 'Failure') + '</td><td>' + escapeHtml(item.error) + '</td></tr>';
-          }).join('');
           var timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
           var statusLabel = metadata.success ? 'SUCCESS' : 'FAILED';
           var statusClass = metadata.success ? 'log-level-info' : 'log-level-error';
-          return '<tr class="log-row" data-upload-log-index="' + index + '"><td class="expand-icon"><i class="fas fa-chevron-right"></i></td><td>' + escapeHtml(timestamp) + '</td><td><span class="log-level ' + statusClass + '">' + statusLabel + '</span></td><td>image_upload_transaction</td><td>' + escapeHtml(log.message) + '</td><td class="iu-log-id" title="' + escapeHtml(metadata.transactionId) + '">' + escapeHtml(metadata.transactionId) + '</td><td>' + escapeHtml(metadata.totalImages) + '</td></tr><tr class="log-details" data-upload-log-detail="' + index + '"><td colspan="7"><div class="log-details-content"><div class="field-row"><div class="field-name">User</div><div class="field-value">' + escapeHtml(metadata.username) + '</div></div><div class="field-row"><div class="field-name">Uploaded</div><div class="field-value">' + escapeHtml(metadata.successfulUploads) + ' / ' + escapeHtml(metadata.totalImages) + '</div></div><div class="field-row"><div class="field-name">CT updated</div><div class="field-value">' + escapeHtml(metadata.successfulCtUpdates) + ' / ' + escapeHtml(metadata.totalImages) + '</div></div><div class="iu-log-items"><table><thead><tr><th>Unit</th><th>Asset URL</th><th>Upload</th><th>CT update</th><th>Error</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></td></tr>';
+          return '<tr class="log-row" data-upload-log-index="' + index + '"><td class="expand-icon"><i class="fas fa-chevron-right"></i></td><td>' + escapeHtml(timestamp) + '</td><td><span class="log-level ' + statusClass + '">' + statusLabel + '</span></td><td>image_upload_transaction</td><td>' + escapeHtml(log.message) + '</td><td class="iu-log-id" title="' + escapeHtml(metadata.transactionId) + '">' + escapeHtml(metadata.transactionId) + '</td><td>' + escapeHtml(metadata.totalImages) + '</td></tr><tr class="log-details" data-upload-log-detail="' + index + '"><td colspan="7"><div class="log-details-content"><div class="field-row"><div class="field-name">User</div><div class="field-value">' + escapeHtml(metadata.username) + '</div></div><div class="field-row"><div class="field-name">Uploaded</div><div class="field-value">' + escapeHtml(metadata.successfulUploads) + ' / ' + escapeHtml(metadata.totalImages) + '</div></div><div class="field-row"><div class="field-name">CT updated</div><div class="field-value">' + escapeHtml(metadata.successfulCtUpdates) + ' / ' + escapeHtml(metadata.totalImages) + '</div></div><div class="iu-log-items" id="uploadLogItems-' + index + '"></div></div></td></tr>';
         }).join('');
         uploadLogs.innerHTML = '<table class="log-table"><thead><tr><th style="width:30px"></th><th>Timestamp</th><th>Status</th><th>Event</th><th>Message</th><th>Transaction ID</th><th>Images</th></tr></thead><tbody>' + body + '</tbody></table>';
         uploadLogs.querySelectorAll('.log-row[data-upload-log-index]').forEach(function (row) {

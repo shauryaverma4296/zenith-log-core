@@ -248,10 +248,20 @@ html(lang="en")
         width: 20px;
         text-align: center;
         color: var(--kibana-text-muted);
-        transition: transform 0.2s;
       }
-      .log-row.expanded .expand-icon {
+      .expand-icon i {
+        display: inline-block;
+        transform: rotate(0deg);
+        transform-origin: center;
+        transition: transform 0.2s ease-out;
+      }
+      .log-row.expanded .expand-icon i {
         transform: rotate(90deg);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .expand-icon i {
+          transition: none;
+        }
       }
       .log-timestamp {
         font-family: 'JetBrains Mono', monospace;

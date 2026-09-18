@@ -57,10 +57,15 @@ block content
     .iu-badge.duplicate-skipped { background: rgba(245,166,35,.14); color: var(--kibana-warning); }
     .iu-badge.failed { background: rgba(255,107,107,.14); color: var(--kibana-error); }
     .iu-log-id { color: var(--kibana-accent); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+    .iu-wrap .log-row:focus-visible { outline: 2px solid var(--kibana-accent); outline-offset: -2px; }
+    .iu-log-summary { align-items: center; border-bottom: 1px solid var(--kibana-border); display: grid; gap: 8px 24px; grid-template-columns: minmax(160px, 1fr) repeat(2, minmax(130px, auto)); padding: 0 0 12px; }
+    .iu-log-summary-item { align-items: baseline; display: flex; gap: 8px; min-width: 0; }
+    .iu-log-summary-label { color: var(--kibana-text-muted); flex: 0 0 auto; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .iu-log-summary-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .iu-log-items { margin-top: 16px; overflow-x: auto; width: 100%; }
     .iu-log-empty { color: var(--kibana-text-muted); padding: 32px; text-align: center; }
     #logsPanel { width: 100%; }
-    @media (max-width: 760px) { .iu-card { padding: 16px; } }
+    @media (max-width: 760px) { .iu-card { padding: 16px; } .iu-log-summary { grid-template-columns: 1fr 1fr; } .iu-log-summary-item:first-child { grid-column: 1 / -1; } }
 
   .cf-header
     .brand
@@ -237,6 +242,7 @@ block content
         var isOpening = !detail.classList.contains('show');
         row.classList.toggle('expanded');
         detail.classList.toggle('show');
+        row.setAttribute('aria-expanded', String(isOpening));
         if (isOpening) renderUploadLogItems(Number(index));
       }
 
@@ -282,11 +288,16 @@ block content
           var timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
           var statusLabel = metadata.success ? 'SUCCESS' : 'FAILED';
           var statusClass = metadata.success ? 'log-level-info' : 'log-level-error';
-          return '<tr class="log-row" data-upload-log-index="' + index + '"><td class="expand-icon"><i class="fas fa-chevron-right"></i></td><td>' + escapeHtml(timestamp) + '</td><td><span class="log-level ' + statusClass + '">' + statusLabel + '</span></td><td>image_upload_transaction</td><td>' + escapeHtml(log.message) + '</td><td class="iu-log-id" title="' + escapeHtml(metadata.transactionId) + '">' + escapeHtml(metadata.transactionId) + '</td><td>' + escapeHtml(metadata.totalImages) + '</td></tr><tr class="log-details" data-upload-log-detail="' + index + '"><td colspan="7"><div class="log-details-content"><div class="field-row"><div class="field-name">User</div><div class="field-value">' + escapeHtml(metadata.username) + '</div></div><div class="field-row"><div class="field-name">Uploaded</div><div class="field-value">' + escapeHtml(metadata.successfulUploads) + ' / ' + escapeHtml(metadata.totalImages) + '</div></div><div class="field-row"><div class="field-name">CT updated</div><div class="field-value">' + escapeHtml(metadata.successfulCtUpdates) + ' / ' + escapeHtml(metadata.totalImages) + '</div></div><div class="iu-log-items" id="uploadLogItems-' + index + '"></div></div></td></tr>';
+          return '<tr class="log-row" data-upload-log-index="' + index + '" tabindex="0" role="button" aria-expanded="false" aria-controls="uploadLogDetail-' + index + '"><td class="expand-icon"><i class="fas fa-chevron-right" aria-hidden="true"></i></td><td>' + escapeHtml(timestamp) + '</td><td><span class="log-level ' + statusClass + '">' + statusLabel + '</span></td><td>image_upload_transaction</td><td>' + escapeHtml(log.message) + '</td><td class="iu-log-id" title="' + escapeHtml(metadata.transactionId) + '">' + escapeHtml(metadata.transactionId) + '</td><td>' + escapeHtml(metadata.totalImages) + '</td></tr><tr class="log-details" id="uploadLogDetail-' + index + '" data-upload-log-detail="' + index + '"><td colspan="7"><div class="log-details-content"><div class="iu-log-summary"><div class="iu-log-summary-item"><span class="iu-log-summary-label">User</span><span class="iu-log-summary-value" title="' + escapeHtml(metadata.username) + '">' + escapeHtml(metadata.username) + '</span></div><div class="iu-log-summary-item"><span class="iu-log-summary-label">Uploaded</span><span class="iu-log-summary-value">' + escapeHtml(metadata.successfulUploads) + ' / ' + escapeHtml(metadata.totalImages) + '</span></div><div class="iu-log-summary-item"><span class="iu-log-summary-label">CT updated</span><span class="iu-log-summary-value">' + escapeHtml(metadata.successfulCtUpdates) + ' / ' + escapeHtml(metadata.totalImages) + '</span></div></div><div class="iu-log-items" id="uploadLogItems-' + index + '"></div></div></td></tr>';
         }).join('');
         uploadLogs.innerHTML = '<table class="log-table"><thead><tr><th style="width:30px"></th><th>Timestamp</th><th>Status</th><th>Event</th><th>Message</th><th>Transaction ID</th><th>Images</th></tr></thead><tbody>' + body + '</tbody></table>';
         uploadLogs.querySelectorAll('.log-row[data-upload-log-index]').forEach(function (row) {
           row.addEventListener('click', function () { toggleUploadLogRow(row.getAttribute('data-upload-log-index')); });
+          row.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            toggleUploadLogRow(row.getAttribute('data-upload-log-index'));
+          });
         });
       }
 

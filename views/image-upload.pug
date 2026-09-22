@@ -251,21 +251,24 @@ block content
         var log = uploadLogData[index] || {};
         var metadata = log.metadata || {};
         var items = Array.isArray(metadata.items) ? metadata.items : [];
+        var failedItems = items.filter(function (item) {
+          return item.uploadSuccess !== true || item.ctUpdateSuccess !== true;
+        });
         if (!container) return;
-        if (!items.length) {
-          container.innerHTML = '<div class="iu-log-empty">No image details were recorded for this transaction.</div>';
+        if (!failedItems.length) {
+          container.innerHTML = '<div class="iu-log-empty"><i class="fas fa-check-circle me-2" aria-hidden="true"></i>No failed images in this transaction.</div>';
           return;
         }
-        var pageCount = Math.ceil(items.length / LOG_ITEMS_PER_PAGE);
+        var pageCount = Math.ceil(failedItems.length / LOG_ITEMS_PER_PAGE);
         var page = Math.min(Math.max(uploadLogItemPages[index] || 1, 1), pageCount);
         uploadLogItemPages[index] = page;
         var start = (page - 1) * LOG_ITEMS_PER_PAGE;
-        var rows = items.slice(start, start + LOG_ITEMS_PER_PAGE).map(function (item) {
+        var rows = failedItems.slice(start, start + LOG_ITEMS_PER_PAGE).map(function (item) {
           var url = safeAssetUrl(item.assetUrl);
           var link = url ? '<a href="' + escapeHtml(url) + '" target="_blank" rel="noreferrer">Open asset</a>' : '';
           return '<tr><td>' + escapeHtml(item.unitName) + '</td><td>' + link + '</td><td>' + (item.uploadSuccess ? 'Success' : 'Failure') + '</td><td>' + (item.ctUpdateSuccess ? 'Success' : 'Failure') + '</td><td>' + escapeHtml(item.error) + '</td></tr>';
         }).join('');
-        container.innerHTML = '<table><thead><tr><th>Unit</th><th>Asset URL</th><th>Upload</th><th>CT update</th><th>Error</th></tr></thead><tbody>' + rows + '</tbody></table><div class="pagination-bar"><div class="page-info">Showing ' + (start + 1) + '–' + Math.min(start + LOG_ITEMS_PER_PAGE, items.length) + ' of ' + items.length + ' images</div><div class="page-buttons"><button class="page-btn" type="button" data-upload-log-page="previous"' + (page === 1 ? ' disabled' : '') + '><i class="fas fa-chevron-left"></i></button><span class="page-info">Page ' + page + ' of ' + pageCount + '</span><button class="page-btn" type="button" data-upload-log-page="next"' + (page === pageCount ? ' disabled' : '') + '><i class="fas fa-chevron-right"></i></button></div></div>';
+        container.innerHTML = '<table><thead><tr><th>Unit</th><th>Asset URL</th><th>Upload</th><th>CT update</th><th>Error</th></tr></thead><tbody>' + rows + '</tbody></table><div class="pagination-bar"><div class="page-info">Showing ' + (start + 1) + '–' + Math.min(start + LOG_ITEMS_PER_PAGE, failedItems.length) + ' of ' + failedItems.length + ' failed images</div><div class="page-buttons"><button class="page-btn" type="button" data-upload-log-page="previous" aria-label="Previous failed images"' + (page === 1 ? ' disabled' : '') + '><i class="fas fa-chevron-left" aria-hidden="true"></i></button><span class="page-info">Page ' + page + ' of ' + pageCount + '</span><button class="page-btn" type="button" data-upload-log-page="next" aria-label="Next failed images"' + (page === pageCount ? ' disabled' : '') + '><i class="fas fa-chevron-right" aria-hidden="true"></i></button></div></div>';
         container.querySelectorAll('[data-upload-log-page]').forEach(function (button) {
           button.addEventListener('click', function () {
             uploadLogItemPages[index] += button.getAttribute('data-upload-log-page') === 'next' ? 1 : -1;

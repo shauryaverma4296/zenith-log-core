@@ -77,7 +77,7 @@ function getConfig() {
     commercetoolsClientId: process.env.COMMERCETOOLS_CLIENT_ID,
     commercetoolsClientSecret: process.env.COMMERCETOOLS_CLIENT_SECRET,
     commercetoolsProjectKey: process.env.COMMERCETOOLS_PROJECT_KEY,
-    commercetoolsFloorPlanAttribute: process.env.COMMERCETOOLS_FLOOR_PLAN_ATTRIBUTE || 'floorPlan',
+    commercetoolsFloorPlanAttribute: process.env.COMMERCETOOLS_FLOOR_PLAN_ATTRIBUTE || 'coloredFloorPlan',
     contentfulManagementToken: process.env.CONTENTFUL_MANAGEMENT_TOKEN || process.env.CONTENTFUL_ACCESS_TOKEN,
     contentfulSpaceId: process.env.CONTENTFUL_SPACE_ID,
     contentfulEnvironmentId: process.env.CONTENTFUL_ENVIRONMENT_ID || process.env.CONTENTFUL_ENVIRONMENT || 'master',
@@ -144,6 +144,13 @@ function uniqueValues(values) {
   return [...new Set(values.map(value => String(value || '').trim()).filter(Boolean))];
 }
 
+function hasAttributeValue(value) {
+  if (value === undefined || value === null) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+}
+
 function csvEscape(value) {
   const text = value == null ? '' : String(value);
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -201,6 +208,7 @@ async function getProductDetails(token, unitName, config) {
     projectName: getPath(product, ['projectName', 'project.name', 'masterData.current.custom.fields.projectName', 'masterData.current.name.en']) || getPath(attributeMap, ['projectName']),
     buildingCode: getPath(product, ['buildingCode', 'masterData.current.custom.fields.buildingCode']) || getPath(attributeMap, ['buildingCode']),
     floorNumber: getPath(product, ['floorNumber', 'masterData.current.custom.fields.floorNumber']) || getPath(attributeMap, ['floorNumber']),
+    hasFloorPlanValue: hasAttributeValue(attributeMap[config.commercetoolsFloorPlanAttribute]),
   };
   return { ...productDetails, tags: uniqueValues([unitName, productDetails.projectName, productDetails.buildingCode, productDetails.floorNumber]) };
 }
@@ -307,6 +315,7 @@ async function uploadAsset(file, unitName, product, config, client) {
       status: 'duplicate-skipped',
       uploadSuccess: true,
       ctUpdateSuccess: false,
+      ctUpdateSkipped: false,
       error: '',
     };
   }
@@ -345,6 +354,7 @@ async function uploadAsset(file, unitName, product, config, client) {
     status: 'uploaded',
     uploadSuccess: true,
     ctUpdateSuccess: false,
+    ctUpdateSkipped: false,
     error: '',
   };
 }
@@ -374,11 +384,14 @@ router.post('/complete', async (req, res) => {
       assetUrl: String(item?.assetUrl || '').slice(0, 2000),
       uploadSuccess: item?.uploadSuccess === true,
       ctUpdateSuccess: item?.ctUpdateSuccess === true,
+      ctUpdateSkipped: item?.ctUpdateSkipped === true,
       status: String(item?.status || 'failed').slice(0, 60),
       error: String(item?.error || '').slice(0, 1000),
     }));
     const successfulUploads = logItems.filter(item => item.uploadSuccess).length;
     const successfulCtUpdates = logItems.filter(item => item.ctUpdateSuccess).length;
+    const skippedCtUpdates = logItems.filter(item => item.ctUpdateSkipped).length;
+    const failedCtUpdates = logItems.length - successfulCtUpdates - skippedCtUpdates;
 
     await writeTransactionLog({
       event: 'image_upload_transaction',
@@ -388,8 +401,9 @@ router.post('/complete', async (req, res) => {
       successfulUploads,
       failedUploads: logItems.length - successfulUploads,
       successfulCtUpdates,
-      failedCtUpdates: logItems.length - successfulCtUpdates,
-      success: successfulUploads === logItems.length && successfulCtUpdates === logItems.length,
+      skippedCtUpdates,
+      failedCtUpdates,
+      success: successfulUploads === logItems.length && failedCtUpdates === 0,
       items: logItems,
     });
     rememberFinalizedTransaction(transactionId);
@@ -418,14 +432,18 @@ router.post('/upload', (req, res) => {
         try {
           const product = await getProductDetails(token, unitName, config);
           const result = await uploadAsset(file, unitName, product, config, contentfulClient);
+          if (result.status === 'duplicate-skipped' && product.hasFloorPlanValue) {
+            results.push({ ...result, ctUpdateSuccess: false, ctUpdateSkipped: true });
+            continue;
+          }
           try {
             await updateFloorPlan(token, product, result.assetUrl, config);
-            results.push({ ...result, ctUpdateSuccess: true });
+            results.push({ ...result, ctUpdateSuccess: true, ctUpdateSkipped: false });
           } catch (error) {
-            results.push({ ...result, ctUpdateSuccess: false, status: 'failed', error: error.message });
+            results.push({ ...result, ctUpdateSuccess: false, ctUpdateSkipped: false, status: 'failed', error: error.message });
           }
         } catch (error) {
-          results.push({ unitName, assetUrl: '', productId: '', projectName: '', buildingCode: '', floorNumber: '', status: 'failed', uploadSuccess: false, ctUpdateSuccess: false, error: error.message });
+          results.push({ unitName, assetUrl: '', productId: '', projectName: '', buildingCode: '', floorNumber: '', status: 'failed', uploadSuccess: false, ctUpdateSuccess: false, ctUpdateSkipped: false, error: error.message });
         }
       }
       return res.json({ results, csv: toCsv(results) });

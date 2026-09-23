@@ -58,7 +58,7 @@ block content
     .iu-badge.failed { background: rgba(255,107,107,.14); color: var(--kibana-error); }
     .iu-log-id { color: var(--kibana-accent); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
     .iu-wrap .log-row:focus-visible { outline: 2px solid var(--kibana-accent); outline-offset: -2px; }
-    .iu-log-summary { align-items: center; border-bottom: 1px solid var(--kibana-border); display: grid; gap: 8px 24px; grid-template-columns: minmax(160px, 1fr) repeat(2, minmax(130px, auto)); padding: 0 0 12px; }
+    .iu-log-summary { align-items: center; border-bottom: 1px solid var(--kibana-border); display: grid; gap: 8px 24px; grid-template-columns: minmax(160px, 1fr) repeat(3, minmax(110px, auto)); padding: 0 0 12px; }
     .iu-log-summary-item { align-items: baseline; display: flex; gap: 8px; min-width: 0; }
     .iu-log-summary-label { color: var(--kibana-text-muted); flex: 0 0 auto; font-size: 11px; font-weight: 600; text-transform: uppercase; }
     .iu-log-summary-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -208,6 +208,7 @@ block content
             assetUrl: String(item.assetUrl || '').slice(0, 2000),
             uploadSuccess: item.uploadSuccess === true,
             ctUpdateSuccess: item.ctUpdateSuccess === true,
+            ctUpdateSkipped: item.ctUpdateSkipped === true,
             status: String(item.status || 'failed').slice(0, 60),
             error: String(item.error || '').slice(0, 300)
           };
@@ -252,7 +253,7 @@ block content
         var metadata = log.metadata || {};
         var items = Array.isArray(metadata.items) ? metadata.items : [];
         var failedItems = items.filter(function (item) {
-          return item.uploadSuccess !== true || item.ctUpdateSuccess !== true;
+          return item.uploadSuccess !== true || (item.ctUpdateSuccess !== true && item.ctUpdateSkipped !== true);
         });
         if (!container) return;
         if (!failedItems.length) {
@@ -291,7 +292,7 @@ block content
           var timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : '';
           var statusLabel = metadata.success ? 'SUCCESS' : 'FAILED';
           var statusClass = metadata.success ? 'log-level-info' : 'log-level-error';
-          return '<tr class="log-row" data-upload-log-index="' + index + '" tabindex="0" role="button" aria-expanded="false" aria-controls="uploadLogDetail-' + index + '"><td class="expand-icon"><i class="fas fa-chevron-right" aria-hidden="true"></i></td><td>' + escapeHtml(timestamp) + '</td><td><span class="log-level ' + statusClass + '">' + statusLabel + '</span></td><td>image_upload_transaction</td><td>' + escapeHtml(log.message) + '</td><td class="iu-log-id" title="' + escapeHtml(metadata.transactionId) + '">' + escapeHtml(metadata.transactionId) + '</td><td>' + escapeHtml(metadata.totalImages) + '</td></tr><tr class="log-details" id="uploadLogDetail-' + index + '" data-upload-log-detail="' + index + '"><td colspan="7"><div class="log-details-content"><div class="iu-log-summary"><div class="iu-log-summary-item"><span class="iu-log-summary-label">User</span><span class="iu-log-summary-value" title="' + escapeHtml(metadata.username) + '">' + escapeHtml(metadata.username) + '</span></div><div class="iu-log-summary-item"><span class="iu-log-summary-label">Uploaded</span><span class="iu-log-summary-value">' + escapeHtml(metadata.successfulUploads) + ' / ' + escapeHtml(metadata.totalImages) + '</span></div><div class="iu-log-summary-item"><span class="iu-log-summary-label">CT updated</span><span class="iu-log-summary-value">' + escapeHtml(metadata.successfulCtUpdates) + ' / ' + escapeHtml(metadata.totalImages) + '</span></div></div><div class="iu-log-items" id="uploadLogItems-' + index + '"></div></div></td></tr>';
+          return '<tr class="log-row" data-upload-log-index="' + index + '" tabindex="0" role="button" aria-expanded="false" aria-controls="uploadLogDetail-' + index + '"><td class="expand-icon"><i class="fas fa-chevron-right" aria-hidden="true"></i></td><td>' + escapeHtml(timestamp) + '</td><td><span class="log-level ' + statusClass + '">' + statusLabel + '</span></td><td>image_upload_transaction</td><td>' + escapeHtml(log.message) + '</td><td class="iu-log-id" title="' + escapeHtml(metadata.transactionId) + '">' + escapeHtml(metadata.transactionId) + '</td><td>' + escapeHtml(metadata.totalImages) + '</td></tr><tr class="log-details" id="uploadLogDetail-' + index + '" data-upload-log-detail="' + index + '"><td colspan="7"><div class="log-details-content"><div class="iu-log-summary"><div class="iu-log-summary-item"><span class="iu-log-summary-label">User</span><span class="iu-log-summary-value" title="' + escapeHtml(metadata.username) + '">' + escapeHtml(metadata.username) + '</span></div><div class="iu-log-summary-item"><span class="iu-log-summary-label">Uploaded</span><span class="iu-log-summary-value">' + escapeHtml(metadata.successfulUploads) + ' / ' + escapeHtml(metadata.totalImages) + '</span></div><div class="iu-log-summary-item"><span class="iu-log-summary-label">CT updated</span><span class="iu-log-summary-value">' + escapeHtml(metadata.successfulCtUpdates) + ' / ' + escapeHtml(metadata.totalImages) + '</span></div><div class="iu-log-summary-item"><span class="iu-log-summary-label">CT skipped</span><span class="iu-log-summary-value">' + escapeHtml(metadata.skippedCtUpdates || 0) + '</span></div></div><div class="iu-log-items" id="uploadLogItems-' + index + '"></div></div></td></tr>';
         }).join('');
         uploadLogs.innerHTML = '<table class="log-table"><thead><tr><th style="width:30px"></th><th>Timestamp</th><th>Status</th><th>Event</th><th>Message</th><th>Transaction ID</th><th>Images</th></tr></thead><tbody>' + body + '</tbody></table>';
         uploadLogs.querySelectorAll('.log-row[data-upload-log-index]').forEach(function (row) {

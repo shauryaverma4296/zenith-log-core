@@ -144,11 +144,9 @@ function uniqueValues(values) {
   return [...new Set(values.map(value => String(value || '').trim()).filter(Boolean))];
 }
 
-function hasAttributeValue(value) {
-  if (value === undefined || value === null) return false;
-  if (typeof value === 'string') return value.trim().length > 0;
-  if (Array.isArray(value)) return value.length > 0;
-  return true;
+function normalizeAssetUrl(value) {
+  const url = String(value || '').trim();
+  return url.startsWith('//') ? `https:${url}` : url;
 }
 
 function csvEscape(value) {
@@ -208,7 +206,7 @@ async function getProductDetails(token, unitName, config) {
     projectName: getPath(product, ['projectName', 'project.name', 'masterData.current.custom.fields.projectName', 'masterData.current.name.en']) || getPath(attributeMap, ['projectName']),
     buildingCode: getPath(product, ['buildingCode', 'masterData.current.custom.fields.buildingCode']) || getPath(attributeMap, ['buildingCode']),
     floorNumber: getPath(product, ['floorNumber', 'masterData.current.custom.fields.floorNumber']) || getPath(attributeMap, ['floorNumber']),
-    hasFloorPlanValue: hasAttributeValue(attributeMap[config.commercetoolsFloorPlanAttribute]),
+    existingFloorPlanUrl: attributeMap[config.commercetoolsFloorPlanAttribute] || '',
   };
   return { ...productDetails, tags: uniqueValues([unitName, productDetails.projectName, productDetails.buildingCode, productDetails.floorNumber]) };
 }
@@ -432,7 +430,9 @@ router.post('/upload', (req, res) => {
         try {
           const product = await getProductDetails(token, unitName, config);
           const result = await uploadAsset(file, unitName, product, config, contentfulClient);
-          if (result.status === 'duplicate-skipped' && product.hasFloorPlanValue) {
+          const contentfulUrl = normalizeAssetUrl(result.assetUrl);
+          const existingCtUrl = normalizeAssetUrl(product.existingFloorPlanUrl);
+          if (result.status === 'duplicate-skipped' && contentfulUrl && contentfulUrl === existingCtUrl) {
             results.push({ ...result, ctUpdateSuccess: false, ctUpdateSkipped: true });
             continue;
           }
